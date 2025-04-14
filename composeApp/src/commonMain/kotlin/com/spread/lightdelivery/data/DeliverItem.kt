@@ -3,7 +3,9 @@ package com.spread.lightdelivery.data
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.spread.lightdelivery.calcTotalPrice
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 class DeliverItem(
     name: String,               // 产品名称
@@ -25,6 +27,16 @@ class DeliverItem(
             if (count <= 0 || price <= 0.0) {
                 return -1.0
             }
-            return BigDecimal.valueOf(count.toLong()).multiply(BigDecimal.valueOf(price)).toDouble()
+            return calcTotalPrice(count, price)
         }
+}
+
+fun Collection<DeliverItem>.totalPrice(): Double {
+    val total = this
+        .filter { it.valid }
+        .sumOf { it.totalPrice }
+
+    return BigDecimal(total)
+        .setScale(2, RoundingMode.HALF_UP)
+        .toDouble()
 }

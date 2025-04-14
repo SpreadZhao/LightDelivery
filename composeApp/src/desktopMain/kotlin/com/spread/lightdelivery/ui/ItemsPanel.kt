@@ -1,5 +1,6 @@
 package com.spread.lightdelivery.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,8 +26,11 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -35,15 +40,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.spread.lightdelivery.calcTotalPrice
 import com.spread.lightdelivery.data.Config
+import com.spread.lightdelivery.data.Config.Customer
 import com.spread.lightdelivery.data.DeliverItem
-import java.math.BigDecimal
+import com.spread.lightdelivery.data.totalPrice
+import com.spread.lightdelivery.ui.theme.outlineLight
+import com.spread.lightdelivery.ui.theme.primaryLight
+import com.spread.lightdelivery.ui.theme.secondaryLight
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemsPanel(modifier: Modifier) {
     // 使用 remember 保存一个可变的 StateList
@@ -52,27 +67,137 @@ fun ItemsPanel(modifier: Modifier) {
     var newItem by remember { mutableStateOf(false) }
     var currIndex by remember { mutableStateOf(-1) }
 
-    Column(modifier) {
-        // 添加按钮
-        Button(onClick = {
-            val item = DeliverItem("新商品", 0, 0.0)
-            items.add(item)
-            showDialog = true
-            newItem = true
-            currIndex = items.lastIndex
-        }, modifier = Modifier.padding(8.dp)) {
-            Text("添加项目")
-        }
+    val customerOptions = Config.get().customers
+    var customerNameExpanded by remember { mutableStateOf(false) }
+    var customerName by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
 
-        // 列表部分
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            items(items.size) { index ->
-                DeliverItemCard(items[index], Modifier.fillMaxWidth().padding(5.dp).clickable {
-                    showDialog = true
-                    currIndex = index
-                })
+    Column(modifier.fillMaxWidth().padding(10.dp)) {
+        OutlinedCard(
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally),
+            border = BorderStroke(1.dp, outlineLight),
+
+            ) {
+            Column(
+                modifier = Modifier.widthIn(max = 1000.dp).padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ExposedDropdownMenuBox(
+                    expanded = customerNameExpanded,
+                    onExpandedChange = { customerNameExpanded = !customerNameExpanded },
+                ) {
+                    TextField(
+                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                            .menuAnchor(MenuAnchorType.PrimaryEditable),
+                        value = customerName,
+                        onValueChange = { customerName = it },
+                        trailingIcon = {
+                            customerOptions?.run {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerNameExpanded)
+                            }
+                        },
+                        label = { Text("客户名称") },
+                    )
+                    customerOptions?.let {
+                        ExposedDropdownMenu(
+                            modifier = Modifier.heightIn(max = 200.dp),
+                            expanded = customerNameExpanded,
+                            onDismissRequest = {
+                                customerNameExpanded = false
+                            }
+                        ) {
+                            it.forEach { customer ->
+                                DropdownMenuItem(
+                                    text = { Text(customer.name) },
+                                    onClick = {
+                                        customerName = customer.name
+                                        address = customer.address
+                                        customerNameExpanded = false
+                                    },
+                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                                )
+                            }
+                        }
+                    }
+                }
+                TextField(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    value = address,
+                    onValueChange = { address = it },
+                    label = { Text("客户地址") },
+                )
             }
         }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(onClick = {
+                val item = DeliverItem("新商品", 0, 0.0)
+                items.add(item)
+                showDialog = true
+                newItem = true
+                currIndex = items.lastIndex
+            }, modifier = Modifier.padding(8.dp).width(120.dp)) {
+                Text("添加项目")
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = SimpleDateFormat(
+                        "yyyy-MM-dd",
+                        Locale.getDefault(Locale.Category.FORMAT)
+                    ).format(Date()),
+                    color = secondaryLight
+                )
+                VerticalDivider(
+                    modifier = Modifier.heightIn(max = 15.dp).padding(horizontal = 5.dp)
+                )
+                Text(
+                    text = "订单总价：${items.totalPrice()}元",
+                    color = primaryLight,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Button(onClick = {
+
+            }, modifier = Modifier.padding(8.dp).width(120.dp)) {
+                Text("保存")
+            }
+        }
+        if (items.isEmpty()) {
+            LazyColumn(modifier = Modifier.weight(1f).widthIn(max = 1000.dp).padding(20.dp)) {
+                items(items.size) { index ->
+                    DeliverItemCard(
+                        items[index],
+                        Modifier.fillMaxWidth().padding(5.dp).clickable {
+                            showDialog = true
+                            currIndex = index
+                        })
+                }
+            }
+        } else {
+            OutlinedCard(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally),
+                border = BorderStroke(1.dp, outlineLight),
+            ) {
+                // 列表部分
+                LazyColumn(modifier = Modifier.weight(1f).widthIn(max = 1000.dp).padding(20.dp)) {
+                    items(items.size) { index ->
+                        DeliverItemCard(
+                            items[index],
+                            Modifier.fillMaxWidth().padding(5.dp).clickable {
+                                showDialog = true
+                                currIndex = index
+                            })
+                    }
+                }
+            }
+        }
+
+
     }
 
     if (showDialog) {
@@ -176,8 +301,7 @@ fun ModifyItemDialog(item: DeliverItem, onDismissRequest: () -> Unit) {
                     onValueChange = {
                         count = it
                         val newTotalPrice = try {
-                            BigDecimal.valueOf(count.toLong())
-                                .multiply(BigDecimal.valueOf(price.toDouble())).toDouble()
+                            calcTotalPrice(count.toLong(), price.toDouble())
                         } catch (e: Exception) {
                             -1.0
                         }
@@ -198,8 +322,7 @@ fun ModifyItemDialog(item: DeliverItem, onDismissRequest: () -> Unit) {
                     onValueChange = {
                         price = it
                         val newTotalPrice = try {
-                            BigDecimal.valueOf(count.toLong())
-                                .multiply(BigDecimal.valueOf(price.toDouble())).toDouble()
+                            calcTotalPrice(count.toLong(), price.toDouble())
                         } catch (e: Exception) {
                             -1.0
                         }
@@ -252,6 +375,13 @@ fun ModifyItemDialog(item: DeliverItem, onDismissRequest: () -> Unit) {
             }
         }
     }
+}
+
+private fun writeConfig(customerName: String, address: String, date: String) {
+    if (customerName.isEmpty() || address.isEmpty() || date.isEmpty()) {
+        return
+    }
+    Config.addNewCustomer(Customer(customerName, address))
 }
 
 private fun checkValid(name: String, count: String, price: String): String? {
