@@ -146,14 +146,9 @@ object DeliverOperator {
             cell.cellStyle = style
         }
 
-        val columnWidths = arrayOf(
-            (16.63 * 256).toInt(),
-            (13.37 * 256).toInt(),
-            (12.87 * 256).toInt(),
-            (16.25 * 256).toInt()
-        )
+        val columnWidths = arrayOf(17, 13, 13, 17)
         for (i in headers.indices) {
-            xlsSheet.setColumnWidth(i, columnWidths[i])
+            xlsSheet.setColumnWidth(i, columnWidths[i] * 256)
         }
         rowTitle.heightInPoints = 45f       // 第1行
         rowCustomer.heightInPoints = 36f    // 第2行
