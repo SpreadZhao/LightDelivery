@@ -1,9 +1,15 @@
 package com.spread.lightdelivery.data
 
+import com.spread.lightdelivery.YMDStr
+import org.apache.poi.ss.usermodel.BorderStyle
+import org.apache.poi.ss.usermodel.HorizontalAlignment
 import org.apache.poi.ss.usermodel.Row
+import org.apache.poi.ss.usermodel.VerticalAlignment
+import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.util.Date
 
 object DeliverOperator {
@@ -60,7 +66,6 @@ object DeliverOperator {
                 sheetList.add(
                     DeliverSheet(
                         title,
-                        phoneNumber,
                         customerName,
                         deliverAddress,
                         date ?: Date(0),
@@ -70,6 +75,132 @@ object DeliverOperator {
             }
         }
         return sheetList
+    }
+
+    fun writeToFile(fileName: String, sheet: DeliverSheet): Boolean {
+        val file = File("delivery/$fileName")
+        if (!file.exists()) {
+            file.createNewFile()
+        } else {
+            return false
+        }
+        val workbook = XSSFWorkbook()
+        val xlsSheet = workbook.createSheet("Sheet1")
+        val style = workbook.createCellStyle().apply {
+            setFont(workbook.createFont().apply {
+                fontName = "宋体"
+                fontHeightInPoints = 16
+                bold = true
+            })
+            alignment = HorizontalAlignment.CENTER
+            verticalAlignment = VerticalAlignment.CENTER
+            borderTop = BorderStyle.THIN
+            borderBottom = BorderStyle.THIN
+            borderLeft = BorderStyle.THIN
+            borderRight = BorderStyle.THIN
+        }
+
+        // row 0 title
+        val rowTitle = xlsSheet.createRow(0)
+        val cellTitle = rowTitle.createCell(0)
+        cellTitle.setCellValue(sheet.title)
+        cellTitle.cellStyle = style
+        xlsSheet.addMergedRegion(CellRangeAddress(0, 0, 0, 3))
+
+        // row 1 customer
+        val rowCustomer = xlsSheet.createRow(1)
+        rowCustomer.createCell(0).setCellValue("客户名称")
+        val cellCustomer = rowCustomer.createCell(1)
+        cellCustomer.setCellValue(sheet.customerName)
+        xlsSheet.addMergedRegion(CellRangeAddress(1, 1, 1, 3))
+        rowCustomer.getCell(0).cellStyle = style
+        cellCustomer.cellStyle = style
+        rowCustomer.createCell(3).cellStyle = style
+
+        // row 2 address
+        val rowAddress = xlsSheet.createRow(2)
+        rowAddress.createCell(0).setCellValue("送货地址")
+        val cellAddress = rowAddress.createCell(1)
+        cellAddress.setCellValue(sheet.deliverAddress)
+        xlsSheet.addMergedRegion(CellRangeAddress(2, 2, 1, 3))
+        rowAddress.getCell(0).cellStyle = style
+        cellAddress.cellStyle = style
+        rowAddress.createCell(3).cellStyle = style
+
+        // row 3 date
+        val rowDate = xlsSheet.createRow(3)
+        rowDate.createCell(0).setCellValue("送货日期")
+        val cellDate = rowDate.createCell(1)
+        cellDate.setCellValue(sheet.date.YMDStr)
+        xlsSheet.addMergedRegion(CellRangeAddress(3, 3, 1, 3))
+        rowDate.getCell(0).cellStyle = style
+        cellDate.cellStyle = style
+        rowDate.createCell(3).cellStyle = style
+
+        // row 4 item headers
+        val rowItemHeaders = xlsSheet.createRow(4)
+        val headers = arrayOf("产品名称", "数量", "价格", "合计")
+        for (i in headers.indices) {
+            val cell = rowItemHeaders.createCell(i)
+            cell.setCellValue(headers[i])
+            cell.cellStyle = style
+        }
+
+        val columnWidths = arrayOf(
+            (16.63 * 256).toInt(),
+            (13.37 * 256).toInt(),
+            (12.87 * 256).toInt(),
+            (16.25 * 256).toInt()
+        )
+        for (i in headers.indices) {
+            xlsSheet.setColumnWidth(i, columnWidths[i])
+        }
+        rowTitle.heightInPoints = 45f       // 第1行
+        rowCustomer.heightInPoints = 36f    // 第2行
+        rowAddress.heightInPoints = 36f     // 第3行
+        rowDate.heightInPoints = 36f        // 第4行
+        rowItemHeaders.heightInPoints = 36f // 第5行
+
+        // items
+        for ((index, item) in sheet.deliverItems.withIndex()) {
+            val rowItem = xlsSheet.createRow(index + 5)
+            rowItem.createCell(0).apply {
+                setCellValue(item.name)
+                cellStyle = style
+            }
+            rowItem.createCell(1).apply {
+                setCellValue(item.count.toDouble())
+                cellStyle = style
+            }
+            rowItem.createCell(2).apply {
+                setCellValue(item.price)
+                cellStyle = style
+            }
+            rowItem.createCell(3).apply {
+                setCellValue(item.totalPrice)
+                cellStyle = style
+            }
+            rowItem.heightInPoints = 27f
+        }
+
+        val rowTotal = xlsSheet.createRow(sheet.deliverItems.size + 5)
+        rowTotal.createCell(0).apply {
+            setCellValue("总计金额")
+            cellStyle = style
+            rowTotal.heightInPoints = 27f
+        }
+        rowTotal.createCell(1).cellStyle = style
+        rowTotal.createCell(2).cellStyle = style
+        rowTotal.createCell(3).apply {
+            setCellValue(sheet.totalPrice)
+            cellStyle = style
+            rowTotal.heightInPoints = 27f
+        }
+
+        FileOutputStream(file).use {
+            workbook.write(it)
+            return true
+        }
     }
 
 

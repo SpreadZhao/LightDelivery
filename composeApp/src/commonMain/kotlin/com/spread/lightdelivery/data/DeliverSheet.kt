@@ -4,7 +4,6 @@ import java.util.Date
 
 data class DeliverSheet(
     val title: String,
-    val phoneNumber: String,
     val customerName: String,
     val deliverAddress: String,
     val date: Date,

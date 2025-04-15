@@ -50,13 +50,14 @@ import com.spread.lightdelivery.calcTotalPrice
 import com.spread.lightdelivery.data.Config
 import com.spread.lightdelivery.data.Config.Customer
 import com.spread.lightdelivery.data.DeliverItem
+import com.spread.lightdelivery.data.DeliverOperator
+import com.spread.lightdelivery.data.DeliverSheet
 import com.spread.lightdelivery.data.totalPrice
+import com.spread.lightdelivery.nowYMDStr
 import com.spread.lightdelivery.ui.theme.outlineLight
 import com.spread.lightdelivery.ui.theme.primaryLight
 import com.spread.lightdelivery.ui.theme.secondaryLight
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,10 +146,7 @@ fun ItemsPanel(modifier: Modifier) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = SimpleDateFormat(
-                        "yyyy-MM-dd",
-                        Locale.getDefault(Locale.Category.FORMAT)
-                    ).format(Date()),
+                    text = nowYMDStr,
                     color = secondaryLight
                 )
                 VerticalDivider(
@@ -161,7 +159,16 @@ fun ItemsPanel(modifier: Modifier) {
                 )
             }
             Button(onClick = {
-
+                writeSheetConfig(customerName, address)
+                val wholesaler = Config.get().wholesaler ?: return@Button
+                val fileName = "${customerName}_${nowYMDStr}.xlsx"
+                DeliverOperator.writeToFile(fileName, DeliverSheet(
+                    title = wholesaler,
+                    customerName = customerName,
+                    deliverAddress = address,
+                    date = Date(),
+                    deliverItems = items
+                ))
             }, modifier = Modifier.padding(8.dp).width(120.dp)) {
                 Text("保存")
             }
@@ -377,8 +384,8 @@ fun ModifyItemDialog(item: DeliverItem, onDismissRequest: () -> Unit) {
     }
 }
 
-private fun writeConfig(customerName: String, address: String, date: String) {
-    if (customerName.isEmpty() || address.isEmpty() || date.isEmpty()) {
+private fun writeSheetConfig(customerName: String, address: String) {
+    if (customerName.isEmpty() || address.isEmpty()) {
         return
     }
     Config.addNewCustomer(Customer(customerName, address))

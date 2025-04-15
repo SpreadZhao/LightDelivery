@@ -10,10 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.spread.lightdelivery.YMDStr
 import com.spread.lightdelivery.data.DeliverSheet
 import com.spread.lightdelivery.ui.theme.secondaryLight
 import com.spread.lightdelivery.ui.theme.surfaceContainerHighLight
-import java.text.SimpleDateFormat
 
 @Composable
 fun SheetCard(sheet: DeliverSheet, modifier: Modifier) {
@@ -31,7 +31,7 @@ fun SheetCard(sheet: DeliverSheet, modifier: Modifier) {
                 Text(text = "客户名称：${sheet.customerName}", color = secondaryLight)
                 Text(text = "送货地址：${sheet.deliverAddress}", color = secondaryLight)
                 Text(
-                    text = "送货日期：${SimpleDateFormat("yyyy-MM-dd").format(sheet.date)}",
+                    text = "送货日期：${sheet.date.YMDStr}",
                     color = secondaryLight
                 )
                 val totalPrice = sheet.totalPrice

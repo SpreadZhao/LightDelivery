@@ -65,11 +65,17 @@ class Config private constructor() {
         @SerialName("name") val name: String
     )
 
+    @SerialName("wholesaler")
+    private var _wholesaler: String? = null
+
     @SerialName("customers")
     private var _customers: MutableList<Customer>? = null
 
     @SerialName("items")
     private var _items: MutableList<Item>? = null
+
+    val wholesaler: String?
+        get() = _wholesaler
 
     val customers: List<Customer>?
         get() = _customers
