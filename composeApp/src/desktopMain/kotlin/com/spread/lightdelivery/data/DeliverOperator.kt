@@ -1,7 +1,9 @@
 package com.spread.lightdelivery.data
 
 import com.spread.lightdelivery.YMDStr
+import com.spread.lightdelivery.toDate
 import org.apache.poi.ss.usermodel.BorderStyle
+import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.HorizontalAlignment
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.ss.usermodel.VerticalAlignment
@@ -71,7 +73,27 @@ object DeliverOperator {
                         continue
                     }
                     if (index == 3) {
-                        row.getCell(1)?.dateCellValue?.let { date = it }
+                        val cell = row.getCell(1)
+                        if (cell != null) {
+                            val cellType = cell.cellType
+                            when (cellType) {
+                                CellType.STRING -> {
+                                    val str = cell.stringCellValue
+                                    date = try {
+                                        str.toDate()
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+                                else -> {
+                                    date = try {
+                                        cell.dateCellValue
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+                            }
+                        }
                     }
                     if (index > 4) {
                         if (checkSheetEnd(row)) {

@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.VerticalDivider
@@ -36,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,11 +59,13 @@ import com.spread.lightdelivery.data.totalPrice
 import com.spread.lightdelivery.ui.theme.outlineLight
 import com.spread.lightdelivery.ui.theme.primaryLight
 import com.spread.lightdelivery.ui.theme.secondaryLight
+import kotlinx.coroutines.launch
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet) {
+fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: SnackbarHostState) {
+    val scope = rememberCoroutineScope()
     // 使用 remember 保存一个可变的 StateList
     val items = remember { mutableStateListOf<DeliverItem>().apply { addAll(sheet.deliverItems) } }
     var showDialog by remember { mutableStateOf(false) }
@@ -161,18 +165,13 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet) {
                 )
             }
             Button(onClick = {
-                writeSheetConfig(customerName, address)
-                val wholesaler = Config.get().wholesaler ?: return@Button
-                val fileName = "${customerName}_${currDate.YMDStr}.xlsx"
-                DeliverOperator.writeToFile(
-                    fileName, DeliverSheet(
-                        title = wholesaler,
-                        customerName = customerName,
-                        deliverAddress = address,
-                        date = Date(),
-                        deliverItems = items
-                    )
-                )
+                scope.launch {
+                    if (save(customerName, address, currDate, items)) {
+                        snackbarHostState.showSnackbar("保存成功")
+                    } else {
+                        snackbarHostState.showSnackbar("保存失败")
+                    }
+                }
             }, modifier = Modifier.padding(8.dp).width(120.dp)) {
                 Text("保存")
             }
@@ -388,11 +387,34 @@ fun ModifyItemDialog(item: DeliverItem, onDismissRequest: () -> Unit) {
     }
 }
 
-private fun writeSheetConfig(customerName: String, address: String) {
+private fun save(
+    customerName: String,
+    address: String,
+    date: Date,
+    items: List<DeliverItem>
+): Boolean {
+    if (!writeSheetConfig(customerName, address)) {
+        return false
+    }
+    val wholesaler = Config.get().wholesaler ?: return false
+    val fileName = "${customerName}_${date.YMDStr}.xlsx"
+    return DeliverOperator.writeToFile(
+        fileName, DeliverSheet(
+            title = wholesaler,
+            customerName = customerName,
+            deliverAddress = address,
+            date = date,
+            deliverItems = items
+        )
+    )
+}
+
+private fun writeSheetConfig(customerName: String, address: String): Boolean {
     if (customerName.isEmpty() || address.isEmpty()) {
-        return
+        return false
     }
     Config.addNewCustomer(Customer(customerName, address))
+    return true
 }
 
 private fun checkValid(name: String, count: String, price: String): String? {
