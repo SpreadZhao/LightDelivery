@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.spread.lightdelivery.YMDStr
 import com.spread.lightdelivery.calcTotalPrice
 import com.spread.lightdelivery.data.Config
 import com.spread.lightdelivery.data.Config.Customer
@@ -53,7 +54,6 @@ import com.spread.lightdelivery.data.DeliverItem
 import com.spread.lightdelivery.data.DeliverOperator
 import com.spread.lightdelivery.data.DeliverSheet
 import com.spread.lightdelivery.data.totalPrice
-import com.spread.lightdelivery.nowYMDStr
 import com.spread.lightdelivery.ui.theme.outlineLight
 import com.spread.lightdelivery.ui.theme.primaryLight
 import com.spread.lightdelivery.ui.theme.secondaryLight
@@ -61,17 +61,19 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemsPanel(modifier: Modifier) {
+fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet) {
     // 使用 remember 保存一个可变的 StateList
-    val items = remember { mutableStateListOf<DeliverItem>() }
+    val items = remember { mutableStateListOf<DeliverItem>().apply { addAll(sheet.deliverItems) } }
     var showDialog by remember { mutableStateOf(false) }
     var newItem by remember { mutableStateOf(false) }
-    var currIndex by remember { mutableStateOf(-1) }
+    var clickedIndex by remember { mutableStateOf(-1) }     // 点击的卡片index，或者新增卡片的index
+
+    var currDate by remember { mutableStateOf(sheet.date) }
 
     val customerOptions = Config.get().customers
     var customerNameExpanded by remember { mutableStateOf(false) }
-    var customerName by remember { mutableStateOf("") }
-    var address by remember { mutableStateOf("") }
+    var customerName by remember { mutableStateOf(sheet.customerName) }
+    var address by remember { mutableStateOf(sheet.deliverAddress) }
 
     Column(modifier.fillMaxWidth().padding(10.dp)) {
         OutlinedCard(
@@ -140,13 +142,13 @@ fun ItemsPanel(modifier: Modifier) {
                 items.add(item)
                 showDialog = true
                 newItem = true
-                currIndex = items.lastIndex
+                clickedIndex = items.lastIndex
             }, modifier = Modifier.padding(8.dp).width(120.dp)) {
                 Text("添加项目")
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = nowYMDStr,
+                    text = currDate.YMDStr,
                     color = secondaryLight
                 )
                 VerticalDivider(
@@ -161,14 +163,16 @@ fun ItemsPanel(modifier: Modifier) {
             Button(onClick = {
                 writeSheetConfig(customerName, address)
                 val wholesaler = Config.get().wholesaler ?: return@Button
-                val fileName = "${customerName}_${nowYMDStr}.xlsx"
-                DeliverOperator.writeToFile(fileName, DeliverSheet(
-                    title = wholesaler,
-                    customerName = customerName,
-                    deliverAddress = address,
-                    date = Date(),
-                    deliverItems = items
-                ))
+                val fileName = "${customerName}_${currDate.YMDStr}.xlsx"
+                DeliverOperator.writeToFile(
+                    fileName, DeliverSheet(
+                        title = wholesaler,
+                        customerName = customerName,
+                        deliverAddress = address,
+                        date = Date(),
+                        deliverItems = items
+                    )
+                )
             }, modifier = Modifier.padding(8.dp).width(120.dp)) {
                 Text("保存")
             }
@@ -180,7 +184,7 @@ fun ItemsPanel(modifier: Modifier) {
                         items[index],
                         Modifier.fillMaxWidth().padding(5.dp).clickable {
                             showDialog = true
-                            currIndex = index
+                            clickedIndex = index
                         })
                 }
             }
@@ -197,7 +201,7 @@ fun ItemsPanel(modifier: Modifier) {
                             items[index],
                             Modifier.fillMaxWidth().padding(5.dp).clickable {
                                 showDialog = true
-                                currIndex = index
+                                clickedIndex = index
                             })
                     }
                 }
@@ -208,7 +212,7 @@ fun ItemsPanel(modifier: Modifier) {
     }
 
     if (showDialog) {
-        items.getOrNull(currIndex)?.let {
+        items.getOrNull(clickedIndex)?.let {
             ModifyItemDialog(it) {
                 showDialog = false
                 if (newItem && !it.valid) {

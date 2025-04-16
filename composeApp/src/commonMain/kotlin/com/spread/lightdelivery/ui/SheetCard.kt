@@ -1,6 +1,7 @@
 package com.spread.lightdelivery.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -16,12 +17,12 @@ import com.spread.lightdelivery.ui.theme.secondaryLight
 import com.spread.lightdelivery.ui.theme.surfaceContainerHighLight
 
 @Composable
-fun SheetCard(sheet: DeliverSheet, modifier: Modifier) {
+fun SheetCard(sheet: DeliverSheet, modifier: Modifier, onSheetClick: (DeliverSheet) -> Unit) {
     Box(
         modifier = modifier.background(
             color = surfaceContainerHighLight,
             shape = RoundedCornerShape(16.dp)
-        ),
+        ).clickable { onSheetClick(sheet) },
     ) {
         Column(
             modifier = Modifier.padding(10.dp),

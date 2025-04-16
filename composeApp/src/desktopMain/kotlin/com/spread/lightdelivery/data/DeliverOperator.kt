@@ -14,6 +14,29 @@ import java.util.Date
 
 object DeliverOperator {
 
+    val sheets: List<DeliverSheet>
+        get() {
+            val list = arrayListOf<DeliverSheet>()
+            val dir = File("delivery")
+            if (!dir.exists() || !dir.isDirectory) {
+                return list
+            }
+            val files = dir.listFiles() ?: return list
+            for (file in files) {
+                if (file.isDirectory) {
+                    continue
+                }
+                if (file.extension != "xlsx") {
+                    continue
+                }
+                val sheet = readFromFile(file.absolutePath)
+                if (sheet.isNotEmpty()) {
+                    list.addAll(sheet)
+                }
+            }
+            return list
+        }
+
     fun readFromFile(path: String): List<DeliverSheet> {
         val sheetList = mutableListOf<DeliverSheet>()
         val file = File(path)
