@@ -38,7 +38,7 @@ fun MainScreen(modifier: Modifier) {
 
         Row(modifier.fillMaxWidth().padding(contentPadding).background(color = surfaceLight)) {
             if (sheets.isNotEmpty()) {
-                SheetPanel(sheets, Modifier.widthIn(max = 500.dp).padding(20.dp)) {
+                SheetPanel(sheets, Modifier.widthIn(max = 500.dp).padding(20.dp), snackbarHostState) {
                     currDeliverSheet = it
                 }
                 VerticalDivider(modifier = Modifier.fillMaxHeight())

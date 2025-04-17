@@ -217,6 +217,7 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: Snack
                 if (newItem && !it.valid) {
                     items.remove(it)
                 }
+                newItem = false
             }
         }
     }

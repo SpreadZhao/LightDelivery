@@ -14,7 +14,7 @@ class Config private constructor() {
 
         private lateinit var config: Config
 
-        val json = Json {
+        private val json = Json {
             ignoreUnknownKeys = true
             isLenient = true
             prettyPrint = true
@@ -37,6 +37,13 @@ class Config private constructor() {
                 config = Config()
                 config
             }
+        }
+
+        fun updateWholesaler(name: String) {
+            if (!::config.isInitialized) {
+                get()
+            }
+            config.updateWholesaler(name)
         }
 
         fun addNewItem(item: Item) {
@@ -82,6 +89,11 @@ class Config private constructor() {
 
     val items: List<Item>?
         get() = _items
+
+    fun updateWholesaler(name: String) {
+        _wholesaler = name
+        saveToFile()
+    }
 
     fun addNewItem(item: Item) {
         if (_items == null) {
