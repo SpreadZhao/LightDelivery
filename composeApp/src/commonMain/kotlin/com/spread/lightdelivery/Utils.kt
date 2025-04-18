@@ -32,3 +32,7 @@ fun calcTotalPrice(a: Long, b: Double): Double {
 val Int.px2Dp: Dp
     @Composable
     get() = with(LocalDensity.current) { toDp() }
+
+val Dp.px: Float
+    @Composable
+    get() = with(LocalDensity.current) { toPx() }

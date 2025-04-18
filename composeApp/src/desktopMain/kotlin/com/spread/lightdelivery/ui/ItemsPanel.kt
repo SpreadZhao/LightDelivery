@@ -28,7 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.VerticalDivider
@@ -56,21 +56,27 @@ import com.spread.lightdelivery.data.DeliverItem
 import com.spread.lightdelivery.data.DeliverOperator
 import com.spread.lightdelivery.data.DeliverSheet
 import com.spread.lightdelivery.data.totalPrice
+import com.spread.lightdelivery.ui.theme.errorLight
 import com.spread.lightdelivery.ui.theme.outlineLight
 import com.spread.lightdelivery.ui.theme.primaryLight
 import com.spread.lightdelivery.ui.theme.secondaryLight
-import kotlinx.coroutines.launch
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: SnackbarHostState) {
+fun ItemsPanel(
+    modifier: Modifier,
+    sheet: DeliverSheet,
+    onSaveSheet: (Boolean) -> Unit
+) {
     val scope = rememberCoroutineScope()
     // 使用 remember 保存一个可变的 StateList
     val items = remember { mutableStateListOf<DeliverItem>().apply { addAll(sheet.deliverItems) } }
-    var showDialog by remember { mutableStateOf(false) }
+    var showModifyDialog by remember { mutableStateOf(false) }
     var newItem by remember { mutableStateOf(false) }
     var clickedIndex by remember { mutableStateOf(-1) }     // 点击的卡片index，或者新增卡片的index
+    var showDatePickDialog by remember { mutableStateOf(false) }
+    var unsaved by remember { mutableStateOf(false) }
 
     var currDate by remember { mutableStateOf(sheet.date) }
 
@@ -98,7 +104,12 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: Snack
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
                             .menuAnchor(MenuAnchorType.PrimaryEditable),
                         value = customerName,
-                        onValueChange = { customerName = it },
+                        onValueChange = {
+                            if (customerName != it) {
+                                unsaved = true
+                            }
+                            customerName = it
+                        },
                         trailingIcon = {
                             customerOptions?.run {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerNameExpanded)
@@ -118,6 +129,9 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: Snack
                                 DropdownMenuItem(
                                     text = { Text(customer.name) },
                                     onClick = {
+                                        if (customerName != customer.name || address != customer.address) {
+                                            unsaved = true
+                                        }
                                         customerName = customer.name
                                         address = customer.address
                                         customerNameExpanded = false
@@ -131,7 +145,12 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: Snack
                 TextField(
                     modifier = Modifier.fillMaxWidth().padding(8.dp),
                     value = address,
-                    onValueChange = { address = it },
+                    onValueChange = {
+                        if (address != it) {
+                            unsaved = true
+                        }
+                        address = it
+                    },
                     label = { Text("客户地址") },
                 )
             }
@@ -144,14 +163,17 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: Snack
             Button(onClick = {
                 val item = DeliverItem("新商品", 0, 0.0)
                 items.add(item)
-                showDialog = true
+                showModifyDialog = true
                 newItem = true
                 clickedIndex = items.lastIndex
             }, modifier = Modifier.padding(8.dp).width(120.dp)) {
-                Text("添加项目")
+                Text("添加产品")
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
+                    modifier = Modifier.clickable {
+                        showDatePickDialog = true
+                    },
                     text = currDate.YMDStr,
                     color = secondaryLight
                 )
@@ -163,15 +185,26 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: Snack
                     color = primaryLight,
                     fontWeight = FontWeight.Bold
                 )
+                if (unsaved) {
+                    SuggestionChip(
+                        modifier = Modifier.padding(start = 10.dp),
+                        onClick = {},
+                        label = { Text(text = "未保存！", color = errorLight) },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Filled.Warning,
+                                contentDescription = "Warning"
+                            )
+                        }
+                    )
+                }
             }
             Button(onClick = {
-                scope.launch {
-                    if (save(customerName, address, currDate, items)) {
-                        snackbarHostState.showSnackbar("保存成功")
-                    } else {
-                        snackbarHostState.showSnackbar("保存失败")
-                    }
+                val success = save(sheet, customerName, address, currDate, items)
+                if (success) {
+                    unsaved = false
                 }
+                onSaveSheet(success)
             }, modifier = Modifier.padding(8.dp).width(120.dp)) {
                 Text("保存")
             }
@@ -182,7 +215,7 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: Snack
                     DeliverItemCard(
                         items[index],
                         Modifier.fillMaxWidth().padding(5.dp).clickable {
-                            showDialog = true
+                            showModifyDialog = true
                             clickedIndex = index
                         })
                 }
@@ -199,7 +232,7 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: Snack
                         DeliverItemCard(
                             items[index],
                             Modifier.fillMaxWidth().padding(5.dp).clickable {
-                                showDialog = true
+                                showModifyDialog = true
                                 clickedIndex = index
                             })
                     }
@@ -210,22 +243,42 @@ fun ItemsPanel(modifier: Modifier, sheet: DeliverSheet, snackbarHostState: Snack
 
     }
 
-    if (showDialog) {
+    if (showModifyDialog) {
         items.getOrNull(clickedIndex)?.let {
-            ModifyItemDialog(it) {
-                showDialog = false
-                if (newItem && !it.valid) {
-                    items.remove(it)
+            ModifyItemDialog(
+                item = it,
+                onModifiedItem = {
+                    unsaved = true
+                },
+                onDismissRequest = {
+                    showModifyDialog = false
+                    if (newItem && !it.valid) {
+                        items.remove(it)
+                    }
+                    newItem = false
                 }
-                newItem = false
-            }
+            )
         }
+    }
+
+    if (showDatePickDialog) {
+        DatePickerModal(
+            onDateSelected = {
+                if (it != null) {
+                    currDate = Date(it)
+                    unsaved = true
+                }
+            },
+            onDismiss = {
+                showDatePickDialog = false
+            }
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModifyItemDialog(item: DeliverItem, onDismissRequest: () -> Unit) {
+fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissRequest: () -> Unit) {
     var name by remember { mutableStateOf(item.name) }
     var count by remember { mutableStateOf(if (item.count == 0) "" else item.count.toString()) }
     var price by remember { mutableStateOf(if (item.price == 0.0) "" else item.price.toString()) }
@@ -376,6 +429,7 @@ fun ModifyItemDialog(item: DeliverItem, onDismissRequest: () -> Unit) {
                         onClick = {
                             errorMsg = checkValid(name, count, price)
                             if (errorMsg == null && tryUpdate(item, name, count, price)) {
+                                onModifiedItem()
                                 onDismissRequest()
                             }
                         }
@@ -389,6 +443,7 @@ fun ModifyItemDialog(item: DeliverItem, onDismissRequest: () -> Unit) {
 }
 
 private fun save(
+    sheet: DeliverSheet,
     customerName: String,
     address: String,
     date: Date,
@@ -399,15 +454,16 @@ private fun save(
     }
     val wholesaler = Config.get().wholesaler ?: return false
     val fileName = "${customerName}_${date.YMDStr}.xlsx"
-    return DeliverOperator.writeToFile(
-        fileName, DeliverSheet(
-            title = wholesaler,
-            customerName = customerName,
-            deliverAddress = address,
-            date = date,
-            deliverItems = items
-        )
+    val res = DeliverOperator.writeToFile(
+        fileName, sheet.apply {
+            this.title = wholesaler
+            this.customerName = customerName
+            this.deliverAddress = address
+            this.date = date
+            this.deliverItems = items
+        }
     )
+    return res
 }
 
 private fun writeSheetConfig(customerName: String, address: String): Boolean {

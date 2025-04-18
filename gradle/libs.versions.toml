@@ -17,9 +17,11 @@ junit = "4.13.2"
 kotlin = "2.1.20"
 kotlinx-coroutines = "1.10.1"
 kotlinxSerializationJson = "1.8.1"
+lifecycleViewmodelCompose = "2.8.7"
 poi = "5.4.1"
 
 [libraries]
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 excelkt = { module = "io.github.evanrupert:excelkt", version.ref = "excelkt" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }

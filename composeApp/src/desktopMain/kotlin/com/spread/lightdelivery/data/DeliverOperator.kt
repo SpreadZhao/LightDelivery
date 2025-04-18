@@ -85,6 +85,7 @@ object DeliverOperator {
                                         null
                                     }
                                 }
+
                                 else -> {
                                     date = try {
                                         cell.dateCellValue
@@ -126,8 +127,6 @@ object DeliverOperator {
         val file = File("delivery/$fileName")
         if (!file.exists()) {
             file.createNewFile()
-        } else {
-            return false
         }
         val workbook = XSSFWorkbook()
         val xlsSheet = workbook.createSheet("Sheet1")

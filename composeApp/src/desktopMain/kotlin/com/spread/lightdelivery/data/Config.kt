@@ -112,10 +112,14 @@ class Config private constructor() {
             _customers = mutableListOf()
         }
         _customers?.run {
-            if (find { it.name == customer.name } == null) {
+            val target = find { it.name == customer.name }
+            if (target == null) {
                 add(customer)
-                saveToFile()
+            } else {
+                remove(target)
+                add(customer)
             }
+            saveToFile()
         }
     }
 
