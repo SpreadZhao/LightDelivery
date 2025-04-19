@@ -177,7 +177,7 @@ fun ItemsPanel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Button(onClick = {
-                val item = DeliverItem("新商品", 0, 0.0)
+                val item = DeliverItem("", 0, 0.0)
                 items.add(item)
                 showModifyDialog = true
                 newItem = true
