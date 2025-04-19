@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -74,7 +73,10 @@ fun SheetCard(
                 color = secondaryDark
             )
         }
-        Column(modifier = Modifier.widthIn(max = 400.dp).padding(5.dp), horizontalAlignment = Alignment.Start) {
+        Column(
+            modifier = Modifier.widthIn(max = 400.dp).padding(5.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
             Text(text = "客户名称：${sheet.customerName}", color = textColor, fontSize = 20.sp)
             Text(text = "送货地址：${sheet.deliverAddress}", color = textColor, fontSize = 20.sp)
             Text(
