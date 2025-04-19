@@ -70,8 +70,8 @@ fun MainScreen(modifier: Modifier) {
                     ItemsPanel(Modifier, it, isNewSheet) { success ->
                         scope.launch {
                             if (success) {
-                                snackbarHostState.showSnackbar("保存成功")
                                 SheetViewModel.refreshSheets()
+                                snackbarHostState.showSnackbar("保存成功")
                             } else {
                                 // 保存失败不刷新，让内存里的sheet还留着
                                 snackbarHostState.showSnackbar("保存失败")
