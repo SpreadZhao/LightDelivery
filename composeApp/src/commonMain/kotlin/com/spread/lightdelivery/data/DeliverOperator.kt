@@ -161,6 +161,9 @@ object DeliverOperator {
 
         // row 0 title
         val rowTitle = xlsSheet.createRow(0)
+        rowTitle.createCell(1).cellStyle = style
+        rowTitle.createCell(2).cellStyle = style
+        rowTitle.createCell(3).cellStyle = style
         val cellTitle = rowTitle.createCell(0)
         cellTitle.setCellValue(sheet.title)
         cellTitle.cellStyle = style
@@ -169,32 +172,38 @@ object DeliverOperator {
         // row 1 customer
         val rowCustomer = xlsSheet.createRow(1)
         rowCustomer.createCell(0).setCellValue("客户名称")
+        rowCustomer.createCell(1).cellStyle = style
+        rowCustomer.createCell(2).cellStyle = style
+        rowCustomer.createCell(3).cellStyle = style
         val cellCustomer = rowCustomer.createCell(1)
         cellCustomer.setCellValue(sheet.customerName)
         xlsSheet.addMergedRegion(CellRangeAddress(1, 1, 1, 3))
         rowCustomer.getCell(0).cellStyle = style
         cellCustomer.cellStyle = style
-        rowCustomer.createCell(3).cellStyle = style
 
         // row 2 address
         val rowAddress = xlsSheet.createRow(2)
+        rowAddress.createCell(1).cellStyle = style
+        rowAddress.createCell(2).cellStyle = style
+        rowAddress.createCell(3).cellStyle = style
         rowAddress.createCell(0).setCellValue("送货地址")
         val cellAddress = rowAddress.createCell(1)
         cellAddress.setCellValue(sheet.deliverAddress)
         xlsSheet.addMergedRegion(CellRangeAddress(2, 2, 1, 3))
         rowAddress.getCell(0).cellStyle = style
         cellAddress.cellStyle = style
-        rowAddress.createCell(3).cellStyle = style
 
         // row 3 date
         val rowDate = xlsSheet.createRow(3)
+        rowDate.createCell(1).cellStyle = style
+        rowDate.createCell(2).cellStyle = style
+        rowDate.createCell(3).cellStyle = style
         rowDate.createCell(0).setCellValue("送货日期")
         val cellDate = rowDate.createCell(1)
         cellDate.setCellValue(sheet.date.YMDStr)
         xlsSheet.addMergedRegion(CellRangeAddress(3, 3, 1, 3))
         rowDate.getCell(0).cellStyle = style
         cellDate.cellStyle = style
-        rowDate.createCell(3).cellStyle = style
 
         // row 4 item headers
         val rowItemHeaders = xlsSheet.createRow(4)
