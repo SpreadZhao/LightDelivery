@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,7 +53,7 @@ fun SheetPanel(
     sheets: MutableList<DeliverSheet>,
     modifier: Modifier,
     onSettingsResult: (SettingsResult) -> Unit,
-    onSheetClick: (DeliverSheet) -> Unit
+    onSheetClick: (DeliverSheet, Boolean) -> Unit
 ) {
 
     var maxWidth by remember { mutableStateOf(0) }
@@ -81,7 +82,7 @@ fun SheetPanel(
             onAddClick = {
                 val newSheet = DeliverSheet()
                 sheets.add(newSheet)
-                onSheetClick(newSheet)
+                onSheetClick(newSheet, true)
             }
         )
     }
@@ -260,8 +261,9 @@ fun SettingsDialog(onDismissRequest: (SettingsResult) -> Unit) {
                     )
                     OutlinedTextField(
                         value = wholesaler,
+                        textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
                         onValueChange = { wholesaler = it },
-                        label = { Text("订单标题（商家的名字和电话）") }
+                        label = { Text(text = "订单标题（商家的名字和电话）", fontSize = 16.sp) }
                     )
                 }
 

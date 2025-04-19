@@ -1,5 +1,6 @@
 package com.spread.lightdelivery.data
 
+import com.spread.lightdelivery.INVALID_DATE
 import com.spread.lightdelivery.YMDStr
 import com.spread.lightdelivery.toDate
 import org.apache.poi.ss.usermodel.BorderStyle
@@ -38,6 +39,17 @@ object DeliverOperator {
             }
             return list
         }
+
+    fun deleteSheet(sheet: DeliverSheet) {
+        val file = File("delivery/${sheet.fileName}")
+        if (file.exists()) {
+            file.delete()
+        }
+    }
+
+    fun fileExists(fileName: String): Boolean {
+        return File("delivery/$fileName").exists()
+    }
 
     fun readFromFile(path: String): List<DeliverSheet> {
         val sheetList = mutableListOf<DeliverSheet>()
@@ -114,19 +126,22 @@ object DeliverOperator {
                         title,
                         customerName,
                         deliverAddress,
-                        date ?: Date(0),
+                        date ?: INVALID_DATE,
                         deliverItems
-                    )
+                    ).apply { fromLocal = true }
                 )
             }
         }
         return sheetList
     }
 
-    fun writeToFile(fileName: String, sheet: DeliverSheet): Boolean {
+    fun writeToFile(fileName: String, sheet: DeliverSheet, isNew: Boolean): Boolean {
         val file = File("delivery/$fileName")
         if (!file.exists()) {
             file.createNewFile()
+        } else if (isNew) {
+            // 文件已经存在，还要创建新表格，则直接保存失败
+            return false
         }
         val workbook = XSSFWorkbook()
         val xlsSheet = workbook.createSheet("Sheet1")
@@ -238,6 +253,7 @@ object DeliverOperator {
 
         FileOutputStream(file).use {
             workbook.write(it)
+            sheet.fromLocal = true
             return true
         }
     }

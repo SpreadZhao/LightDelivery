@@ -13,6 +13,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -28,6 +29,7 @@ fun MainScreen(modifier: Modifier) {
     val sheets = remember { SheetViewModel.sheets }
 
     var currDeliverSheet by remember { SheetViewModel.currDeliverSheet }
+    var isNewSheet by remember { mutableStateOf(false) }
 
     // TODO: snackbarHostState传递过深，导致snackbar展示不出来？
     val snackbarHostState = remember { SnackbarHostState() }
@@ -51,8 +53,13 @@ fun MainScreen(modifier: Modifier) {
                         }
                     }
                 },
-                onSheetClick = {
-                    currDeliverSheet = it
+                onSheetClick = { sheet, isNew ->
+                    SheetViewModel.currDeliverSheet.value = sheet
+                    SheetViewModel.unsaved.value = !sheet.valid
+                    isNewSheet = isNew
+                    if (!isNew) {
+                        SheetViewModel.refreshSheets()
+                    }
                 }
             )
             VerticalDivider(modifier = Modifier.fillMaxHeight())
@@ -60,12 +67,13 @@ fun MainScreen(modifier: Modifier) {
                 // key is needed to refresh UI
                 // TODO: why?
                 key(it.hashCode()) {
-                    ItemsPanel(Modifier, it) { success ->
-                        SheetViewModel.refreshSheets()
+                    ItemsPanel(Modifier, it, isNewSheet) { success ->
                         scope.launch {
                             if (success) {
                                 snackbarHostState.showSnackbar("保存成功")
+                                SheetViewModel.refreshSheets()
                             } else {
+                                // 保存失败不刷新，让内存里的sheet还留着
                                 snackbarHostState.showSnackbar("保存失败")
                             }
                         }

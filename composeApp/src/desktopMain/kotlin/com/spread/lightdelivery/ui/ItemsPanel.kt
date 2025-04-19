@@ -25,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
@@ -55,11 +56,13 @@ import com.spread.lightdelivery.data.Config.Customer
 import com.spread.lightdelivery.data.DeliverItem
 import com.spread.lightdelivery.data.DeliverOperator
 import com.spread.lightdelivery.data.DeliverSheet
+import com.spread.lightdelivery.data.SheetViewModel
 import com.spread.lightdelivery.data.totalPrice
 import com.spread.lightdelivery.ui.theme.errorLight
 import com.spread.lightdelivery.ui.theme.outlineLight
 import com.spread.lightdelivery.ui.theme.primaryLight
 import com.spread.lightdelivery.ui.theme.secondaryLight
+import com.spread.lightdelivery.ui.theme.tertiaryLight
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +70,7 @@ import java.util.Date
 fun ItemsPanel(
     modifier: Modifier,
     sheet: DeliverSheet,
+    isNew: Boolean,
     onSaveSheet: (Boolean) -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -76,7 +80,7 @@ fun ItemsPanel(
     var newItem by remember { mutableStateOf(false) }
     var clickedIndex by remember { mutableStateOf(-1) }     // 点击的卡片index，或者新增卡片的index
     var showDatePickDialog by remember { mutableStateOf(false) }
-    var unsaved by remember { mutableStateOf(false) }
+    val unsaved by remember { SheetViewModel.unsaved }
 
     var currDate by remember { mutableStateOf(sheet.date) }
 
@@ -104,9 +108,10 @@ fun ItemsPanel(
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
                             .menuAnchor(MenuAnchorType.PrimaryEditable),
                         value = customerName,
+                        textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
                         onValueChange = {
                             if (customerName != it) {
-                                unsaved = true
+                                SheetViewModel.unsaved.value = true
                             }
                             customerName = it
                         },
@@ -115,7 +120,12 @@ fun ItemsPanel(
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerNameExpanded)
                             }
                         },
-                        label = { Text("客户名称") },
+                        label = {
+                            Text(
+                                text = "客户名称",
+                                fontSize = 16.sp
+                            )
+                        }
                     )
                     customerOptions?.let {
                         ExposedDropdownMenu(
@@ -130,7 +140,7 @@ fun ItemsPanel(
                                     text = { Text(customer.name) },
                                     onClick = {
                                         if (customerName != customer.name || address != customer.address) {
-                                            unsaved = true
+                                            SheetViewModel.unsaved.value = true
                                         }
                                         customerName = customer.name
                                         address = customer.address
@@ -145,13 +155,19 @@ fun ItemsPanel(
                 TextField(
                     modifier = Modifier.fillMaxWidth().padding(8.dp),
                     value = address,
+                    textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
                     onValueChange = {
                         if (address != it) {
-                            unsaved = true
+                            SheetViewModel.unsaved.value = true
                         }
                         address = it
                     },
-                    label = { Text("客户地址") },
+                    label = {
+                        Text(
+                            text = "客户地址",
+                            fontSize = 16.sp
+                        )
+                    },
                 )
             }
         }
@@ -166,8 +182,8 @@ fun ItemsPanel(
                 showModifyDialog = true
                 newItem = true
                 clickedIndex = items.lastIndex
-            }, modifier = Modifier.padding(8.dp).width(120.dp)) {
-                Text("添加产品")
+            }, modifier = Modifier.padding(8.dp).width(150.dp)) {
+                Text(text = "添加产品", fontSize = 20.sp)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -175,7 +191,8 @@ fun ItemsPanel(
                         showDatePickDialog = true
                     },
                     text = currDate.YMDStr,
-                    color = secondaryLight
+                    color = secondaryLight,
+                    fontSize = 20.sp
                 )
                 VerticalDivider(
                     modifier = Modifier.heightIn(max = 15.dp).padding(horizontal = 5.dp)
@@ -183,13 +200,14 @@ fun ItemsPanel(
                 Text(
                     text = "订单总价：${items.totalPrice()}元",
                     color = primaryLight,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
                 )
                 if (unsaved) {
                     SuggestionChip(
                         modifier = Modifier.padding(start = 10.dp),
                         onClick = {},
-                        label = { Text(text = "未保存！", color = errorLight) },
+                        label = { Text(text = "未保存！", color = errorLight, fontSize = 20.sp) },
                         icon = {
                             Icon(
                                 imageVector = Icons.Filled.Warning,
@@ -200,15 +218,21 @@ fun ItemsPanel(
                 }
             }
             Button(onClick = {
-                val success = save(sheet, customerName, address, currDate, items)
+                val success = save(sheet, customerName, address, currDate, items, isNew)
                 if (success) {
-                    unsaved = false
+                    SheetViewModel.unsaved.value = false
                 }
                 onSaveSheet(success)
-            }, modifier = Modifier.padding(8.dp).width(120.dp)) {
-                Text("保存")
+            }, modifier = Modifier.padding(8.dp).width(150.dp)) {
+                Text(text = "保存", fontSize = 20.sp)
             }
         }
+
+        val onItemDelete = { item: DeliverItem ->
+            items.remove(item)
+            SheetViewModel.unsaved.value = true
+        }
+
         if (items.isEmpty()) {
             LazyColumn(modifier = Modifier.weight(1f).widthIn(max = 1000.dp).padding(20.dp)) {
                 items(items.size) { index ->
@@ -217,7 +241,8 @@ fun ItemsPanel(
                         Modifier.fillMaxWidth().padding(5.dp).clickable {
                             showModifyDialog = true
                             clickedIndex = index
-                        })
+                        }, onItemDelete
+                    )
                 }
             }
         } else {
@@ -234,7 +259,8 @@ fun ItemsPanel(
                             Modifier.fillMaxWidth().padding(5.dp).clickable {
                                 showModifyDialog = true
                                 clickedIndex = index
-                            })
+                            }, onItemDelete
+                        )
                     }
                 }
             }
@@ -248,7 +274,7 @@ fun ItemsPanel(
             ModifyItemDialog(
                 item = it,
                 onModifiedItem = {
-                    unsaved = true
+                    SheetViewModel.unsaved.value = true
                 },
                 onDismissRequest = {
                     showModifyDialog = false
@@ -266,7 +292,7 @@ fun ItemsPanel(
             onDateSelected = {
                 if (it != null) {
                     currDate = Date(it)
-                    unsaved = true
+                    SheetViewModel.unsaved.value = true
                 }
             },
             onDismiss = {
@@ -316,9 +342,10 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                     OutlinedTextField(
                         value = name,
                         placeholder = {
-                            Text(item.name)
+                            Text(text = item.name, fontSize = 20.sp)
                         },
                         singleLine = true,
+                        textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
                         onValueChange = {
                             name = it
                             errorMsg = checkValid(name, count, price)
@@ -330,7 +357,7 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                         },
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
                             .menuAnchor(MenuAnchorType.PrimaryEditable),
-                        label = { Text("产品名称") },
+                        label = { Text(text = "产品名称", fontSize = 16.sp) },
                     )
                     options?.let {
                         ExposedDropdownMenu(
@@ -361,6 +388,7 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                     placeholder = {
                         Text(item.count.toString())
                     },
+                    textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
                     singleLine = true,
                     onValueChange = {
                         count = it
@@ -375,14 +403,15 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                         errorMsg = checkValid(name, count, price)
                     },
                     modifier = Modifier.fillMaxWidth().padding(8.dp),
-                    label = { Text("数量") },
+                    label = { Text(text = "数量", fontSize = 16.sp) },
                 )
                 OutlinedTextField(
                     value = price,
                     placeholder = {
-                        Text(item.price.toString())
+                        Text(text = item.price.toString(), fontSize = 20.sp)
                     },
                     singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
                     onValueChange = {
                         price = it
                         val newTotalPrice = try {
@@ -396,7 +425,7 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                         errorMsg = checkValid(name, count, price)
                     },
                     modifier = Modifier.fillMaxWidth().padding(8.dp),
-                    label = { Text("单价") },
+                    label = { Text(text = "单价", fontSize = 16.sp) },
                 )
                 val msg = errorMsg
                 val valid = msg.isNullOrEmpty()
@@ -406,14 +435,15 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                 ) {
                     Icon(
                         imageVector = if (valid) Icons.Default.Info else Icons.Default.Warning,
-                        tint = Color.Gray,
+                        tint = if (valid) tertiaryLight else errorLight,
                         modifier = Modifier.size(20.dp),
                         contentDescription = null
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (valid) "实时总价：${totalPrice}" else msg,
-                        color = if (valid) Color.Unspecified else Color.Red
+                        color = if (valid) Color.Unspecified else Color.Red,
+                        fontSize = 20.sp
                     )
                 }
                 Row(
@@ -423,7 +453,7 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                     Button(
                         onClick = onDismissRequest
                     ) {
-                        Text("取消")
+                        Text(text = "取消", fontSize = 20.sp)
                     }
                     Button(
                         onClick = {
@@ -434,7 +464,7 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                             }
                         }
                     ) {
-                        Text("确定")
+                        Text(text = "确定", fontSize = 20.sp)
                     }
                 }
             }
@@ -447,13 +477,14 @@ private fun save(
     customerName: String,
     address: String,
     date: Date,
-    items: List<DeliverItem>
+    items: List<DeliverItem>,
+    isNew: Boolean
 ): Boolean {
     if (!writeSheetConfig(customerName, address)) {
         return false
     }
     val wholesaler = Config.get().wholesaler ?: return false
-    val fileName = "${customerName}_${date.YMDStr}.xlsx"
+    val fileName = DeliverSheet.getFileName(customerName, date)
     val res = DeliverOperator.writeToFile(
         fileName, sheet.apply {
             this.title = wholesaler
@@ -461,7 +492,7 @@ private fun save(
             this.deliverAddress = address
             this.date = date
             this.deliverItems = items
-        }
+        }, isNew
     )
     return res
 }

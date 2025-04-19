@@ -38,13 +38,13 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.poi)
+            implementation(libs.poi.ooxml)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
 //            implementation(libs.excelkt)
-            implementation(libs.poi)
-            implementation(libs.poi.ooxml)
         }
     }
 }

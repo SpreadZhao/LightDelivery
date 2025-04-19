@@ -9,6 +9,8 @@ import java.util.Date
 
 /* Date */
 
+val INVALID_DATE = Date(0)
+
 fun String.toDate(): Date {
     return SimpleDateFormat("yyyy-MM-dd").parse(this)
 }

@@ -12,10 +12,17 @@ object SheetViewModel {
 
     var currDeliverSheet = mutableStateOf<DeliverSheet?>(null)
 
+    var unsaved = mutableStateOf(false)
+
     fun refreshSheets() {
         sheets.clear()
         sheets.addAll(DeliverOperator.sheets)
         sheets.sortByDescending { it.date }
+    }
+
+    fun deleteSheet(sheet: DeliverSheet) {
+        DeliverOperator.deleteSheet(sheet)
+        sheets.remove(sheet)
     }
 
 }
