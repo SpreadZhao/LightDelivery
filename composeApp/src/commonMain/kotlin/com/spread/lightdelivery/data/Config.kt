@@ -39,6 +39,22 @@ class Config private constructor() {
             }
         }
 
+        fun updateCustomers(customers: List<Customer>) {
+            if (!::config.isInitialized) {
+                get()
+            }
+            config._customers = customers.filter { it.name.isNotBlank() }.toMutableList()
+            config.saveToFile()
+        }
+
+        fun updateItems(items: List<Item>) {
+            if (!::config.isInitialized) {
+                get()
+            }
+            config._items = items.filter { it.name.isNotBlank() }.toMutableList()
+            config.saveToFile()
+        }
+
         fun updateWholesaler(name: String) {
             if (!::config.isInitialized) {
                 get()
@@ -63,13 +79,13 @@ class Config private constructor() {
 
     @Serializable
     data class Customer(
-        @SerialName("name") val name: String,
-        @SerialName("address") val address: String
+        @SerialName("name") var name: String,
+        @SerialName("address") var address: String
     )
 
     @Serializable
     data class Item(
-        @SerialName("name") val name: String
+        @SerialName("name") var name: String
     )
 
     @SerialName("wholesaler")

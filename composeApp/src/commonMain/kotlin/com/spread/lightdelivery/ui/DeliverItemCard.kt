@@ -112,7 +112,7 @@ fun DeleteConfirmDialog(
         },
         title = {
             Text(
-                text = "确认删除送货单",
+                text = "确认删除产品",
                 color = primaryLight
             )
         },

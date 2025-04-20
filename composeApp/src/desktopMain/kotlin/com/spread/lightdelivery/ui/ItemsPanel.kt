@@ -218,11 +218,13 @@ fun ItemsPanel(
                 }
             }
             Button(onClick = {
-                val success = save(sheet, customerName, address, currDate, items, isNew)
-                if (success) {
-                    SheetViewModel.unsaved.value = false
+                if (unsaved) {
+                    val success = save(sheet, customerName, address, currDate, items, isNew)
+                    if (success) {
+                        SheetViewModel.unsaved.value = false
+                    }
+                    onSaveSheet(success)
                 }
-                onSaveSheet(success)
             }, modifier = Modifier.padding(8.dp).width(150.dp)) {
                 Text(text = "保存", fontSize = 20.sp)
             }
