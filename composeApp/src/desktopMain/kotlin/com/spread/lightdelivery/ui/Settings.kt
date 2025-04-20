@@ -126,13 +126,11 @@ fun SettingsDialog(onDismissRequest: (SettingsResult) -> Unit) {
                     )
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxSize(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        CustomerList(Modifier.weight(1f).padding(5.dp), customerList)
-                        ProductList(Modifier.weight(1f).padding(5.dp), itemList)
+                        CustomerList(Modifier.weight(1f).padding(end = 5.dp), customerList)
+                        ProductList(Modifier.weight(1f).padding(start = 5.dp), itemList)
                     }
                 }
 
@@ -191,7 +189,7 @@ fun CustomerItem(customer: Customer) {
                 name = it
                 customer.name = it
             },
-            label = { Text("客户名称") },
+            label = { Text(text = "客户名称", fontSize = 16.sp) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(4.dp))
@@ -201,7 +199,7 @@ fun CustomerItem(customer: Customer) {
                 address = it
                 customer.address = it
             },
-            label = { Text("客户地址") },
+            label = { Text(text = "客户地址", fontSize = 16.sp) },
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -226,7 +224,7 @@ fun ProductItem(product: Item) {
             name = it
             product.name = it
         },
-        label = { Text("产品名称") },
+        label = { Text(text = "产品名称", fontSize = 16.sp) },
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
