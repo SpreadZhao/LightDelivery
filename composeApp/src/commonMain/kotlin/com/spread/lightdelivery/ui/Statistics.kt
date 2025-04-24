@@ -208,6 +208,8 @@ fun CustomerPickPage(config: StatisticsConfig) {
     }
 }
 
+// TODO: 顾客和产品不能从config里取，要从sheet里取。这里的配置都得改
+
 @Composable
 fun CustomerChip(name: String, selected: Boolean, onSelectChange: (Boolean) -> Unit) {
     FilterChip(
