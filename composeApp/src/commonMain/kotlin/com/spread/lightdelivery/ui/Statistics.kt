@@ -48,8 +48,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.spread.lightdelivery.data.Config
 import com.spread.lightdelivery.data.SheetViewModel
+import com.spread.lightdelivery.ui.theme.onPrimaryContainerLight
+import com.spread.lightdelivery.ui.theme.primaryContainerLight
 import com.spread.lightdelivery.ui.theme.primaryLight
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -57,6 +58,10 @@ import java.util.Date
 
 @Composable
 fun StatisticsDialog(onDismissRequest: () -> Unit) {
+
+    LaunchedEffect("only once") {
+        SheetViewModel.refreshSheets()
+    }
 
     Dialog(
         onDismissRequest = onDismissRequest,
@@ -144,15 +149,15 @@ fun StatisticsPager(modifier: Modifier, state: PagerState, config: StatisticsCon
 data class StatisticsConfig(
     var timeStart: Long? = null,
     var timeEnd: Long? = null,
-    var customers: MutableList<Pair<Config.Customer, Boolean>> = mutableStateListOf(),
-    var items: MutableList<Pair<Config.Item, Boolean>> = mutableStateListOf()
+    var customers: MutableList<Pair<String, Boolean>> = mutableStateListOf(),
+    var items: MutableList<Pair<String, Boolean>> = mutableStateListOf()
 ) {
 
     data class Result(
         val timeStart: Long,
         val timeEnd: Long,
-        val customers: List<Config.Customer>,
-        val items: List<Config.Item>
+        val customers: List<String>,
+        val items: List<String>
     )
 
     val result: Result
@@ -191,10 +196,10 @@ fun DatePickPage(config: StatisticsConfig) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CustomerPickPage(config: StatisticsConfig) {
-    val displayCustomers = config.customers
+    val displayCustomers = remember { config.customers }
     LaunchedEffect("only once") {
-        Config.get().customers?.forEach { customer ->
-            val target = displayCustomers.find { it.first.name == customer.name }
+        SheetViewModel.customerNamesInSheet.forEach { customer ->
+            val target = displayCustomers.find { it.first == customer }
             if (target == null) {
                 // customer not show, make it unselected
                 displayCustomers.add(Pair(customer, false))
@@ -202,16 +207,22 @@ fun CustomerPickPage(config: StatisticsConfig) {
         }
     }
     FlowRow(modifier = Modifier.padding(10.dp).wrapContentSize()) {
+        SelectAllChip(
+            selected = displayCustomers.all { it.second },
+            onSelectChange = { selectAll ->
+                for (i in displayCustomers.indices) {
+                    displayCustomers[i] = Pair(displayCustomers[i].first, selectAll)
+                }
+            }
+        )
         for (customer in displayCustomers) {
-            CustomerChip(name = customer.first.name, selected = customer.second, onSelectChange = {
+            CustomerChip(name = customer.first, selected = customer.second, onSelectChange = {
                 val index = displayCustomers.indexOf(customer)
                 displayCustomers[index] = Pair(customer.first, !customer.second)
             })
         }
     }
 }
-
-// TODO: 顾客和产品不能从config里取，要从sheet里取。这里的配置都得改
 
 @Composable
 fun CustomerChip(name: String, selected: Boolean, onSelectChange: (Boolean) -> Unit) {
@@ -241,10 +252,10 @@ fun CustomerChip(name: String, selected: Boolean, onSelectChange: (Boolean) -> U
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ItemPickPage(config: StatisticsConfig) {
-    val displayItems = config.items
+    val displayItems = remember { config.items }
     LaunchedEffect("only once") {
-        Config.get().items?.forEach { item ->
-            val target = displayItems.find { it.first.name == item.name }
+        SheetViewModel.itemNamesInSheet.forEach { item ->
+            val target = displayItems.find { it.first == item }
             if (target == null) {
                 // item not show, make it unselected
                 displayItems.add(Pair(item, false))
@@ -252,8 +263,16 @@ fun ItemPickPage(config: StatisticsConfig) {
         }
     }
     FlowRow(modifier = Modifier.padding(10.dp).wrapContentSize()) {
+        SelectAllChip(
+            selected = displayItems.all { it.second },
+            onSelectChange = { selectAll ->
+                for (i in displayItems.indices) {
+                    displayItems[i] = Pair(displayItems[i].first, selectAll)
+                }
+            }
+        )
         for (item in displayItems) {
-            ItemChip(name = item.first.name, selected = item.second, onSelectChange = {
+            ItemChip(name = item.first, selected = item.second, onSelectChange = {
                 val index = displayItems.indexOf(item)
                 displayItems[index] = Pair(item.first, !item.second)
             })
@@ -287,13 +306,41 @@ fun ItemChip(name: String, selected: Boolean, onSelectChange: (Boolean) -> Unit)
 }
 
 @Composable
+fun SelectAllChip(selected: Boolean, onSelectChange: (Boolean) -> Unit) {
+    FilterChip(
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = primaryContainerLight,
+            selectedContainerColor = primaryContainerLight
+        ),
+        modifier = Modifier.padding(5.dp),
+        onClick = {
+            onSelectChange(!selected)
+        },
+        label = {
+            Text(text = "全选", color = onPrimaryContainerLight)
+        },
+        selected = selected,
+        leadingIcon = if (selected) {
+            {
+                Icon(
+                    imageVector = Icons.Filled.Done,
+                    contentDescription = "Done icon",
+                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                )
+            }
+        } else {
+            null
+        },
+    )
+}
+
+@Composable
 fun ResultPage(result: StatisticsConfig.Result) {
 
     // map from customer name to total price of items
     val priceMap = remember { mutableStateMapOf<String, Double>() }
 
     LaunchedEffect("only once") {
-        SheetViewModel.refreshSheets()
         // sheets that fit date and customer
         val sheets = SheetViewModel.sheets.filter { sheet ->
             val sheetTimestamp = sheet.date.time
@@ -304,7 +351,7 @@ fun ResultPage(result: StatisticsConfig.Result) {
             if (sheetCustomerName.isBlank()) {
                 return@filter false
             }
-            if (result.customers.find { it.name == sheetCustomerName } == null) {
+            if (result.customers.find { it == sheetCustomerName } == null) {
                 return@filter false
             }
             return@filter true
@@ -315,7 +362,7 @@ fun ResultPage(result: StatisticsConfig.Result) {
             for (item in items) {
                 val itemName = item.name
                 val customerName = sheet.customerName
-                if (result.items.find { it.name == itemName } == null) {
+                if (result.items.find { it == itemName } == null) {
                     continue
                 }
                 val price = priceMap[customerName] ?: 0.0

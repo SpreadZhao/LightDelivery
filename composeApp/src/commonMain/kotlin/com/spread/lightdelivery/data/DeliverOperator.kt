@@ -137,7 +137,12 @@ object DeliverOperator {
         return sheetList
     }
 
-    fun writeToFile(result: SheetViewModel.SaveResult, fileName: String, sheet: DeliverSheet, isNew: Boolean): Boolean {
+    fun writeToFile(
+        result: SheetViewModel.SaveResult,
+        fileName: String,
+        sheet: DeliverSheet,
+        isNew: Boolean
+    ): Boolean {
         try {
             ensureDir()
             val file = File("${DIR_NAME}/$fileName")

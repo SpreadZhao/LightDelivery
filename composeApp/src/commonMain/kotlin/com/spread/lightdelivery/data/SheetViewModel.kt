@@ -12,6 +12,12 @@ object SheetViewModel {
         sortByDescending { it.date }
     }
 
+    val customerNamesInSheet: List<String>
+        get() = sheets.map { it.customerName }
+
+    val itemNamesInSheet: List<String>
+        get() = sheets.flatMap { it.deliverItems }.map { it.name }
+
     var currDeliverSheet = mutableStateOf<DeliverSheet?>(null)
 
     var unsaved = mutableStateOf(false)
@@ -62,7 +68,11 @@ object SheetViewModel {
         return result
     }
 
-    private fun writeSheetConfig(result: SaveResult, customerName: String, address: String): Boolean {
+    private fun writeSheetConfig(
+        result: SaveResult,
+        customerName: String,
+        address: String
+    ): Boolean {
         if (customerName.isEmpty()) {
             result.errMsg = "请输入客户名称"
             return false
