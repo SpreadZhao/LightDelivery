@@ -177,7 +177,7 @@ fun ItemsPanel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Button(onClick = {
-                val item = DeliverItem("", 0, 0.0)
+                val item = DeliverItem("", 0.0, 0.0)
                 items.add(item)
                 showModifyDialog = true
                 newItem = true
@@ -308,7 +308,7 @@ fun ItemsPanel(
 @Composable
 fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissRequest: () -> Unit) {
     var name by remember { mutableStateOf(item.name) }
-    var count by remember { mutableStateOf(if (item.count == 0) "" else item.count.toString()) }
+    var count by remember { mutableStateOf(if (item.count == 0.0) "" else item.count.toString()) }
     var price by remember { mutableStateOf(if (item.price == 0.0) "" else item.price.toString()) }
     var totalPrice by remember { mutableStateOf(item.totalPrice) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -395,7 +395,7 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                     onValueChange = {
                         count = it
                         val newTotalPrice = try {
-                            calcTotalPrice(count.toLong(), price.toDouble())
+                            calcTotalPrice(count.toDouble(), price.toDouble())
                         } catch (e: Exception) {
                             -1.0
                         }
@@ -417,7 +417,7 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
                     onValueChange = {
                         price = it
                         val newTotalPrice = try {
-                            calcTotalPrice(count.toLong(), price.toDouble())
+                            calcTotalPrice(count.toDouble(), price.toDouble())
                         } catch (e: Exception) {
                             -1.0
                         }
@@ -514,10 +514,7 @@ private fun checkValid(name: String, count: String, price: String): String? {
     if (count.isEmpty()) {
         return "数量为空"
     }
-    if (count.toUIntOrNull() == null) {
-        return "数量格式不正确"
-    }
-    val c = count.toIntOrNull() ?: return "数量格式不正确"
+    val c = count.toDoubleOrNull() ?: return "数量格式不正确"
     if (c <= 0) {
         return "数量必须大于0"
     }
@@ -541,9 +538,9 @@ private fun tryUpdate(
         return false
     }
     try {
-        val c = count.toInt()
+        val c = count.toDouble()
         val p = price.toDouble()
-        if (c > 0 && p >= 0.0) {
+        if (c > 0.0 && p >= 0.0) {
             item.name = name
             item.count = c
             item.price = p

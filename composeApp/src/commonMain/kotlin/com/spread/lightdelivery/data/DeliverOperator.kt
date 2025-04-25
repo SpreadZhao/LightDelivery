@@ -113,7 +113,7 @@ object DeliverOperator {
                             break
                         }
                         val name = row.getCell(0)?.stringCellValue ?: ""
-                        val count = row.getCell(1)?.numericCellValue?.toInt() ?: -1
+                        val count = row.getCell(1)?.numericCellValue ?: -1.0
                         val price = row.getCell(2)?.numericCellValue ?: -1.0
                         val totalPrice = row.getCell(3)?.numericCellValue ?: -1.0
                         val deliverItem = DeliverItem(name, count, price)

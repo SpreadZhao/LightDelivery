@@ -21,11 +21,7 @@ val nowYMDStr: String
 val Date.YMDStr: String
     get() = SimpleDateFormat("yyyy-MM-dd").format(this)
 
-fun calcTotalPrice(a: Int, b: Double): Double {
-    return calcTotalPrice(a.toLong(), b)
-}
-
-fun calcTotalPrice(a: Long, b: Double): Double {
+fun calcTotalPrice(a: Double, b: Double): Double {
     return BigDecimal.valueOf(a).multiply(BigDecimal.valueOf(b)).toDouble()
 }
 

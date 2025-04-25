@@ -170,7 +170,10 @@ data class StatisticsConfig(
 fun DatePickPage(config: StatisticsConfig) {
     val dateRangePickerState = rememberDateRangePickerState()
 
-    LaunchedEffect(dateRangePickerState.selectedStartDateMillis, dateRangePickerState.selectedEndDateMillis) {
+    LaunchedEffect(
+        dateRangePickerState.selectedStartDateMillis,
+        dateRangePickerState.selectedEndDateMillis
+    ) {
         config.timeStart = dateRangePickerState.selectedStartDateMillis
         config.timeEnd = dateRangePickerState.selectedEndDateMillis
     }

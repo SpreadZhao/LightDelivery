@@ -9,7 +9,7 @@ import java.math.RoundingMode
 
 class DeliverItem(
     name: String,               // 产品名称
-    count: Int,                 // 产品数量
+    count: Double,                 // 产品数量
     price: Double,          // 产品单价
 ) {
 
