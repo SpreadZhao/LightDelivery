@@ -54,12 +54,12 @@ fun MainScreen(modifier: Modifier) {
                     }
                 },
                 onSheetClick = { sheet, isNew ->
-                    SheetViewModel.currDeliverSheet.value = sheet
-                    SheetViewModel.unsaved.value = !sheet.valid
                     isNewSheet = isNew
                     if (!isNew) {
                         SheetViewModel.refreshSheets()
                     }
+                    SheetViewModel.unsaved.value = !sheet.valid
+                    SheetViewModel.currDeliverSheet.value = sheet
                 }
             )
             VerticalDivider(modifier = Modifier.fillMaxHeight())
@@ -67,14 +67,14 @@ fun MainScreen(modifier: Modifier) {
                 // key is needed to refresh UI
                 // TODO: why?
                 key(it.hashCode()) {
-                    ItemsPanel(Modifier, it, isNewSheet) { success ->
+                    ItemsPanel(Modifier, it, isNewSheet) { result ->
                         scope.launch {
-                            if (success) {
+                            if (result.success) {
                                 SheetViewModel.refreshSheets()
                                 snackbarHostState.showSnackbar("保存成功")
                             } else {
                                 // 保存失败不刷新，让内存里的sheet还留着
-                                snackbarHostState.showSnackbar("保存失败")
+                                snackbarHostState.showSnackbar("保存失败：${result.errMsg}")
                             }
                         }
                     }

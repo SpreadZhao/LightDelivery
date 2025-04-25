@@ -52,9 +52,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.spread.lightdelivery.YMDStr
 import com.spread.lightdelivery.calcTotalPrice
 import com.spread.lightdelivery.data.Config
-import com.spread.lightdelivery.data.Config.Customer
 import com.spread.lightdelivery.data.DeliverItem
-import com.spread.lightdelivery.data.DeliverOperator
 import com.spread.lightdelivery.data.DeliverSheet
 import com.spread.lightdelivery.data.SheetViewModel
 import com.spread.lightdelivery.data.totalPrice
@@ -71,7 +69,7 @@ fun ItemsPanel(
     modifier: Modifier,
     sheet: DeliverSheet,
     isNew: Boolean,
-    onSaveSheet: (Boolean) -> Unit
+    onSaveSheet: (SheetViewModel.SaveResult) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     // 使用 remember 保存一个可变的 StateList
@@ -219,11 +217,18 @@ fun ItemsPanel(
             }
             Button(onClick = {
                 if (unsaved) {
-                    val success = save(sheet, customerName, address, currDate, items, isNew)
-                    if (success) {
+                    val result = SheetViewModel.save(
+                        sheet = sheet,
+                        customerName = customerName,
+                        address = address,
+                        date = currDate,
+                        items = items,
+                        isNew = isNew
+                    )
+                    if (result.success) {
                         SheetViewModel.unsaved.value = false
                     }
-                    onSaveSheet(success)
+                    onSaveSheet(result)
                 }
             }, modifier = Modifier.padding(8.dp).width(150.dp)) {
                 Text(text = "保存", fontSize = 20.sp)
@@ -472,39 +477,6 @@ fun ModifyItemDialog(item: DeliverItem, onModifiedItem: () -> Unit, onDismissReq
             }
         }
     }
-}
-
-private fun save(
-    sheet: DeliverSheet,
-    customerName: String,
-    address: String,
-    date: Date,
-    items: List<DeliverItem>,
-    isNew: Boolean
-): Boolean {
-    if (!writeSheetConfig(customerName, address)) {
-        return false
-    }
-    val wholesaler = Config.get().wholesaler ?: return false
-    val fileName = DeliverSheet.getFileName(customerName, date)
-    val res = DeliverOperator.writeToFile(
-        fileName, sheet.apply {
-            this.title = wholesaler
-            this.customerName = customerName
-            this.deliverAddress = address
-            this.date = date
-            this.deliverItems = items
-        }, isNew
-    )
-    return res
-}
-
-private fun writeSheetConfig(customerName: String, address: String): Boolean {
-    if (customerName.isEmpty() || address.isEmpty()) {
-        return false
-    }
-    Config.addNewCustomer(Customer(customerName, address))
-    return true
 }
 
 private fun checkValid(name: String, count: String, price: String): String? {

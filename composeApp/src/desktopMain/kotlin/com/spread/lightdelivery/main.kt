@@ -4,6 +4,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.spread.lightdelivery.ui.MainScreen
@@ -15,7 +16,10 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "LightDelivery",
-        state = rememberWindowState(size = DpSize(1500.dp, 1000.dp))
+        state = rememberWindowState(
+            placement = WindowPlacement.Maximized,
+            size = DpSize(1200.dp, 800.dp)
+        )
     ) {
         LightDeliverTheme {
             MainScreen(Modifier)
