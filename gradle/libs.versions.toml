@@ -1,4 +1,5 @@
 [versions]
+accompanistFlowlayout = "0.36.0"
 agp = "8.5.2"
 android-compileSdk = "35"
 android-minSdk = "24"
@@ -21,6 +22,7 @@ lifecycleViewmodelCompose = "2.8.7"
 poi = "5.4.1"
 
 [libraries]
+accompanist-flowlayout = { module = "com.google.accompanist:accompanist-flowlayout", version.ref = "accompanistFlowlayout" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 excelkt = { module = "io.github.evanrupert:excelkt", version.ref = "excelkt" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Card
-import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
@@ -33,7 +31,6 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -48,13 +45,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.spread.lightdelivery.currYearAndMonth
 import com.spread.lightdelivery.data.SheetViewModel
+import com.spread.lightdelivery.dayOfMonthNew
+import com.spread.lightdelivery.maxDaysInMonth
+import com.spread.lightdelivery.monthNew
+import com.spread.lightdelivery.sumTotalPrice
 import com.spread.lightdelivery.ui.theme.onPrimaryContainerLight
 import com.spread.lightdelivery.ui.theme.primaryContainerLight
 import com.spread.lightdelivery.ui.theme.primaryLight
+import com.spread.lightdelivery.yearNew
 import kotlinx.coroutines.launch
-import java.util.Calendar
-import java.util.Date
 
 @Composable
 fun StatisticsDialog(onDismissRequest: () -> Unit) {
@@ -87,7 +88,14 @@ fun StatisticsDialog(onDismissRequest: () -> Unit) {
                         modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 10.dp),
                         textAlign = TextAlign.Center
                     )
-                    val config = rememberUpdatedState(StatisticsConfig())
+                    val config = currYearAndMonth.run {
+                        rememberUpdatedState(
+                            StatisticsConfig(
+                                year = first,
+                                month = second
+                            )
+                        )
+                    }
                     StatisticsPager(
                         modifier = Modifier.fillMaxWidth(),
                         state = pagerState,
@@ -147,23 +155,23 @@ fun StatisticsPager(modifier: Modifier, state: PagerState, config: StatisticsCon
 }
 
 data class StatisticsConfig(
-    var timeStart: Long? = null,
-    var timeEnd: Long? = null,
+    var year: Int = 0,
+    var month: Int = 0,
     var customers: MutableList<Pair<String, Boolean>> = mutableStateListOf(),
     var items: MutableList<Pair<String, Boolean>> = mutableStateListOf()
 ) {
 
     data class Result(
-        val timeStart: Long,
-        val timeEnd: Long,
+        val year: Int,
+        val month: Int,
         val customers: List<String>,
         val items: List<String>
     )
 
     val result: Result
         get() = Result(
-            timeStart = timeStart ?: 0L,
-            timeEnd = timeEnd ?: 0L,
+            year = year,
+            month = month,
             customers = customers.filter { it.second }.map { it.first },
             items = items.filter { it.second }.map { it.first }
         )
@@ -173,24 +181,17 @@ data class StatisticsConfig(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickPage(config: StatisticsConfig) {
-    val dateRangePickerState = rememberDateRangePickerState()
 
-    LaunchedEffect(
-        dateRangePickerState.selectedStartDateMillis,
-        dateRangePickerState.selectedEndDateMillis
-    ) {
-        config.timeStart = dateRangePickerState.selectedStartDateMillis
-        config.timeEnd = dateRangePickerState.selectedEndDateMillis
-    }
-
-    DateRangePicker(
-        state = dateRangePickerState,
-        showModeToggle = true,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(500.dp)
-            .padding(16.dp)
+    MonthPicker(
+        modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(30.dp),
+        currentMonth = config.month,
+        currentYear = config.year,
+        confirmButtonCLicked = { month, year ->
+            config.month = month
+            config.year = year
+        }
     )
+
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -337,14 +338,15 @@ fun SelectAllChip(selected: Boolean, onSelectChange: (Boolean) -> Unit) {
 @Composable
 fun ResultPage(result: StatisticsConfig.Result) {
 
-    // map from customer name to total price of items
-    val priceMap = remember { mutableStateMapOf<String, Double>() }
+    // map from day of month to total price of items
+    val priceMap = remember { mutableStateMapOf<Int, Double>() }
 
     LaunchedEffect("only once") {
         // sheets that fit date and customer
         val sheets = SheetViewModel.sheets.filter { sheet ->
-            val sheetTimestamp = sheet.date.time
-            if (!dateValid(sheetTimestamp, result.timeStart, result.timeEnd)) {
+            val sheetYear = sheet.date.yearNew
+            val sheetMonth = sheet.date.monthNew
+            if (sheetYear != result.year || sheetMonth != result.month) {
                 return@filter false
             }
             val sheetCustomerName = sheet.customerName
@@ -357,66 +359,45 @@ fun ResultPage(result: StatisticsConfig.Result) {
             return@filter true
         }
 
-        for (sheet in sheets) {
-            val items = sheet.deliverItems
-            for (item in items) {
-                val itemName = item.name
-                val customerName = sheet.customerName
-                if (result.items.find { it == itemName } == null) {
+        val maxDays = result.month.maxDaysInMonth
+
+        for (day in 1..maxDays) {
+            val sheetsOfCurrDay = sheets.filter { sheet ->
+                val sheetYear = sheet.date.yearNew
+                val sheetMonth = sheet.date.monthNew
+                val sheetDay = sheet.date.dayOfMonthNew
+                sheetYear == result.year && sheetMonth == result.month && sheetDay == day
+            }
+            if (sheetsOfCurrDay.isEmpty()) {
+                continue
+            }
+            if (sheetsOfCurrDay.size > 1) {
+                throw RuntimeException("${result.year}年${result.month + 1}月${day}日的表格不只一个")
+            }
+            val sheetOfCurrDay = sheetsOfCurrDay.first()
+            var totalPrice = 0.0
+            for (item in sheetOfCurrDay.deliverItems) {
+                if (!item.valid || result.items.find { it == item.name } == null) {
                     continue
                 }
-                val price = priceMap[customerName] ?: 0.0
-                val itemPrice = item.totalPrice.takeIf { it > 0.0 }
-                if (itemPrice != null) {
-                    priceMap[customerName] = price + itemPrice
-                }
+                totalPrice += item.totalPrice
+            }
+            if (totalPrice > 0.0) {
+                priceMap[day] = totalPrice
             }
         }
 
     }
 
     LazyColumn {
-        items(priceMap.toList()) { (customerName, price) ->
-            Text(text = "$customerName: $price")
+        items(priceMap.toList()) { (day, price) ->
+            Text(text = "${result.year}年${result.month + 1}月${day}日: $price")
+        }
+        item(key = priceMap.size) {
+            priceMap.values.sumTotalPrice().takeIf { it > 0.0 }?.let {
+                Text(text = "总计: $it")
+            }
         }
     }
 
-}
-
-
-fun dateValid(time: Long, start: Long, end: Long): Boolean {
-    val date = Date(time)
-
-    val startDate = Date(start)
-    val endDate = Date(end)
-
-    // Get the start and end of the day for startDate and endDate
-    val startOfDay = startDate.toStartOfDay()
-    val endOfDay = endDate.toEndOfDay()
-
-    return date >= startOfDay && date <= endOfDay
-}
-
-
-// Extension functions to get the start and end of the day for a given Date
-fun Date.toStartOfDay(): Date {
-    val calendar = Calendar.getInstance().apply {
-        time = this@toStartOfDay
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
-    return calendar.time
-}
-
-fun Date.toEndOfDay(): Date {
-    val calendar = Calendar.getInstance().apply {
-        time = this@toEndOfDay
-        set(Calendar.HOUR_OF_DAY, 23)
-        set(Calendar.MINUTE, 59)
-        set(Calendar.SECOND, 59)
-        set(Calendar.MILLISECOND, 999)
-    }
-    return calendar.time
 }
