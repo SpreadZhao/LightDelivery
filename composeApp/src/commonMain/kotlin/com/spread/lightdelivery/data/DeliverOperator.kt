@@ -2,6 +2,7 @@ package com.spread.lightdelivery.data
 
 import com.spread.lightdelivery.INVALID_DATE
 import com.spread.lightdelivery.YMDStr
+import com.spread.lightdelivery.sumTotalPrice
 import com.spread.lightdelivery.toDate
 import org.apache.poi.ss.usermodel.BorderStyle
 import org.apache.poi.ss.usermodel.CellType
@@ -17,12 +18,13 @@ import java.util.Date
 
 object DeliverOperator {
 
-    private const val DIR_NAME = "delivery"
+    private const val DIR_NAME_DELIVERY = "delivery"
+    private const val DIR_STATISTICS = "statistics"
 
     val sheets: List<DeliverSheet>
         get() {
             val list = arrayListOf<DeliverSheet>()
-            val dir = ensureDir()
+            val dir = ensureDir(DIR_NAME_DELIVERY)
             if (!dir.exists() || !dir.isDirectory) {
                 return list
             }
@@ -43,14 +45,14 @@ object DeliverOperator {
         }
 
     fun deleteSheet(sheet: DeliverSheet) {
-        val file = File("${DIR_NAME}/${sheet.fileName}")
+        val file = File("${DIR_NAME_DELIVERY}/${sheet.fileName}")
         if (file.exists()) {
             file.delete()
         }
     }
 
     fun fileExists(fileName: String): Boolean {
-        return File("${DIR_NAME}/$fileName").exists()
+        return File("${DIR_NAME_DELIVERY}/$fileName").exists()
     }
 
     fun readFromFile(path: String): List<DeliverSheet> {
@@ -144,8 +146,8 @@ object DeliverOperator {
         isNew: Boolean
     ): Boolean {
         try {
-            ensureDir()
-            val file = File("${DIR_NAME}/$fileName")
+            ensureDir(DIR_NAME_DELIVERY)
+            val file = File("${DIR_NAME_DELIVERY}/$fileName")
             if (!file.exists()) {
                 file.createNewFile()
             } else if (isNew) {
@@ -273,10 +275,100 @@ object DeliverOperator {
             FileOutputStream(file).use {
                 workbook.write(it)
                 sheet.fromLocal = true
+                workbook.close()
                 return true
             }
         } catch (e: Exception) {
             result.errMsg = e.localizedMessage
+            return false
+        }
+    }
+
+    /**
+     * year: 1997-2030 etc.
+     * month: 1-12
+     * day: 1-31
+     */
+    fun saveStatistics(
+        customerName: String,
+        year: Int,
+        month: Int,
+        priceMap: Map<Int, Double>
+    ): Boolean {
+        try {
+            val dir = ensureDir(DIR_STATISTICS)
+            if (!dir.exists()) {
+                return false
+            }
+            val filename = "${customerName}.xlsx"
+            val xlsxFile = File(dir, filename)
+            val workbook = if (xlsxFile.exists()) {
+                XSSFWorkbook(xlsxFile)
+            } else {
+                xlsxFile.createNewFile()
+                XSSFWorkbook()
+            }
+            // ensure sheet not exist
+            for (i in 0 until workbook.numberOfSheets) {
+                val sheet = workbook.getSheetAt(i)
+                if (sheet.sheetName == "${month}月") {
+                    return false
+                }
+            }
+            val sheet = workbook.createSheet("${month}月")
+            val style = workbook.createCellStyle().apply {
+                setFont(workbook.createFont().apply {
+                    fontName = "宋体"
+                    fontHeightInPoints = 16
+                    bold = true
+                })
+                alignment = HorizontalAlignment.CENTER
+                verticalAlignment = VerticalAlignment.CENTER
+                borderTop = BorderStyle.THIN
+                borderBottom = BorderStyle.THIN
+                borderLeft = BorderStyle.THIN
+                borderRight = BorderStyle.THIN
+            }
+
+            // title row
+            val rowTitle = sheet.createRow(0)
+            val dateCell = rowTitle.createCell(0)
+            dateCell.cellStyle = style
+            dateCell.setCellValue("日期")
+            val dailyTotalPriceCell = rowTitle.createCell(1)
+            dailyTotalPriceCell.cellStyle = style
+            dailyTotalPriceCell.setCellValue("单日总价")
+
+            // daily price
+            for ((day, price) in priceMap) {
+                val row = sheet.createRow(day)
+                row.createCell(0).apply {
+                    setCellValue("${year}年${month}月${day}日")
+                    cellStyle = style
+                }
+                row.createCell(1).apply {
+                    setCellValue(price)
+                    cellStyle = style
+                }
+            }
+
+            // total price
+            val rowTotal = sheet.createRow(priceMap.size + 1)
+            rowTotal.createCell(0).apply {
+                setCellValue("产品总价")
+                cellStyle = style
+            }
+            rowTotal.createCell(1).apply {
+                setCellValue(priceMap.values.sumTotalPrice())
+                cellStyle = style
+            }
+
+            FileOutputStream(xlsxFile).use {
+                workbook.write(it)
+                workbook.close()
+                return true
+            }
+        } catch (e: Exception) {
             return false
         }
     }
@@ -307,8 +399,8 @@ object DeliverOperator {
         }
     }
 
-    private fun ensureDir(): File {
-        val dir = File(DIR_NAME)
+    private fun ensureDir(name: String): File {
+        val dir = File(name)
         dir.mkdirs()
         return dir
     }

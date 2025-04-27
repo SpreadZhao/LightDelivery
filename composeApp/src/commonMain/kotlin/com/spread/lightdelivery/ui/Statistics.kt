@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.spread.lightdelivery.currYearAndMonth
+import com.spread.lightdelivery.data.DeliverOperator
 import com.spread.lightdelivery.data.SheetViewModel
 import com.spread.lightdelivery.dayOfMonthNew
 import com.spread.lightdelivery.maxDaysInMonth
@@ -140,7 +141,8 @@ fun StatisticsDialog(onDismissRequest: () -> Unit) {
 
                 if (pagerState.currentPage == 3 && config.value.valid) {
                     FilledIconButton(
-                        onClick = {},
+                        onClick = {
+                        },
                         modifier = Modifier.size(40.dp).align(Alignment.TopStart)
                             .padding(start = 5.dp, top = 5.dp)
                     ) {
