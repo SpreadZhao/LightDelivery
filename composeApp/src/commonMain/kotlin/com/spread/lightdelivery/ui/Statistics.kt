@@ -35,9 +35,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -56,6 +56,7 @@ import com.spread.lightdelivery.ui.theme.primaryContainerLight
 import com.spread.lightdelivery.ui.theme.primaryLight
 import com.spread.lightdelivery.yearNew
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 @Composable
 fun StatisticsDialog(onDismissRequest: () -> Unit) {
@@ -79,6 +80,16 @@ fun StatisticsDialog(onDismissRequest: () -> Unit) {
 
                 val pagerState = rememberPagerState(pageCount = { 4 })
                 val scope = rememberCoroutineScope()
+                val config = currYearAndMonth.run {
+                    remember {
+                        mutableStateOf(
+                            StatisticsConfig(
+                                year = first,
+                                month = second
+                            )
+                        )
+                    }
+                }
 
                 Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                     Text(
@@ -88,14 +99,6 @@ fun StatisticsDialog(onDismissRequest: () -> Unit) {
                         modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 10.dp),
                         textAlign = TextAlign.Center
                     )
-                    val config = currYearAndMonth.run {
-                        rememberUpdatedState(
-                            StatisticsConfig(
-                                year = first,
-                                month = second
-                            )
-                        )
-                    }
                     StatisticsPager(
                         modifier = Modifier.fillMaxWidth(),
                         state = pagerState,
@@ -135,6 +138,18 @@ fun StatisticsDialog(onDismissRequest: () -> Unit) {
                     )
                 }
 
+                if (pagerState.currentPage == 3 && config.value.valid) {
+                    FilledIconButton(
+                        onClick = {},
+                        modifier = Modifier.size(40.dp).align(Alignment.TopStart)
+                            .padding(start = 5.dp, top = 5.dp)
+                    ) {
+                        Icon(
+                            imageVector = SaveIcon,
+                            contentDescription = "Print"
+                        )
+                    }
+                }
 
             }
         }
@@ -157,8 +172,8 @@ fun StatisticsPager(modifier: Modifier, state: PagerState, config: StatisticsCon
 data class StatisticsConfig(
     var year: Int = 0,
     var month: Int = 0,
-    var customers: MutableList<Pair<String, Boolean>> = mutableStateListOf(),
-    var items: MutableList<Pair<String, Boolean>> = mutableStateListOf()
+    val customers: MutableList<Pair<String, Boolean>> = mutableStateListOf(),
+    val items: MutableList<Pair<String, Boolean>> = mutableStateListOf()
 ) {
 
     data class Result(
@@ -175,6 +190,12 @@ data class StatisticsConfig(
             customers = customers.filter { it.second }.map { it.first },
             items = items.filter { it.second }.map { it.first }
         )
+
+    val valid: Boolean
+        get() = year > 0
+                && month in Calendar.JANUARY..Calendar.DECEMBER
+                && customers.all { it.second }
+                && items.all { it.second }
 
 }
 
@@ -210,9 +231,9 @@ fun CustomerPickPage(config: StatisticsConfig) {
     FlowRow(modifier = Modifier.padding(10.dp).wrapContentSize()) {
         SelectAllChip(
             selected = displayCustomers.all { it.second },
-            onSelectChange = { selectAll ->
+            onSelectChange = { select ->
                 for (i in displayCustomers.indices) {
-                    displayCustomers[i] = Pair(displayCustomers[i].first, selectAll)
+                    displayCustomers[i] = Pair(displayCustomers[i].first, select)
                 }
             }
         )
@@ -393,7 +414,7 @@ fun ResultPage(result: StatisticsConfig.Result) {
         items(priceMap.toList()) { (day, price) ->
             Text(text = "${result.year}年${result.month + 1}月${day}日: $price")
         }
-        item(key = priceMap.size) {
+        item {
             priceMap.values.sumTotalPrice().takeIf { it > 0.0 }?.let {
                 Text(text = "总计: $it")
             }
