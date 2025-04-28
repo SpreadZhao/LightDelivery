@@ -44,11 +44,35 @@ val SaveIcon: ImageVector
                 arcToRelative(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = false, -1f, 1f)
                 verticalLineToRelative(7.293f)
                 lineToRelative(2.646f, -2.647f)
-                arcToRelative(0.5f, 0.5f, 0f, isMoreThanHalf = false, isPositiveArc = true, 0.708f, 0.708f)
+                arcToRelative(
+                    0.5f,
+                    0.5f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    0.708f,
+                    0.708f
+                )
                 lineToRelative(-3.5f, 3.5f)
-                arcToRelative(0.5f, 0.5f, 0f, isMoreThanHalf = false, isPositiveArc = true, -0.708f, 0f)
+                arcToRelative(
+                    0.5f,
+                    0.5f,
+                    0f,
+                    isMoreThanHalf = false,
+                    isPositiveArc = true,
+                    -0.708f,
+                    0f
+                )
                 lineToRelative(-3.5f, -3.5f)
-                arcToRelative(0.5f, 0.5f, 0f, isMoreThanHalf = true, isPositiveArc = true, 0.708f, -0.708f)
+                arcToRelative(
+                    0.5f,
+                    0.5f,
+                    0f,
+                    isMoreThanHalf = true,
+                    isPositiveArc = true,
+                    0.708f,
+                    -0.708f
+                )
                 lineTo(7.5f, 9.293f)
                 verticalLineTo(2f)
                 arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 2f, -2f)
