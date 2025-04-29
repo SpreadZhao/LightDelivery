@@ -62,7 +62,10 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 @Composable
-fun StatisticsDialog(onDismissRequest: () -> Unit) {
+fun StatisticsDialog(
+    onStatisticsSaved: (SheetViewModel.SaveResult) -> Unit,
+    onDismissRequest: () -> Unit
+) {
 
     LaunchedEffect("only once") {
         SheetViewModel.refreshSheets()
@@ -144,11 +147,13 @@ fun StatisticsDialog(onDismissRequest: () -> Unit) {
                 if (pagerState.currentPage == 2 && config.value.valid) {
                     FilledIconButton(
                         onClick = {
-                            DeliverOperator.saveStatistics(
-                                customerName = config.value.result.customerName,
-                                year = config.value.year,
-                                month = config.value.month + 1,
-                                priceMap = config.value.priceMap
+                            onStatisticsSaved(
+                                DeliverOperator.saveStatistics(
+                                    customerName = config.value.result.customerName,
+                                    year = config.value.year,
+                                    month = config.value.month + 1,
+                                    priceMap = config.value.priceMap
+                                )
                             )
                         },
                         modifier = Modifier.size(40.dp).align(Alignment.TopStart)

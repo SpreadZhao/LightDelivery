@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spread.lightdelivery.data.DeliverSheet
+import com.spread.lightdelivery.data.SheetViewModel
 import com.spread.lightdelivery.px
 import com.spread.lightdelivery.px2Dp
 import com.spread.lightdelivery.ui.theme.primaryLight
@@ -34,7 +35,8 @@ fun SheetPanel(
     sheets: MutableList<DeliverSheet>,
     modifier: Modifier,
     onSettingsResult: (SettingsResult) -> Unit,
-    onSheetClick: (DeliverSheet, Boolean) -> Unit
+    onSheetClick: (DeliverSheet, Boolean) -> Unit,
+    onStatisticsSaved: (SheetViewModel.SaveResult) -> Unit
 ) {
 
     var maxWidth by remember { mutableStateOf(0) }
@@ -64,7 +66,8 @@ fun SheetPanel(
                 val newSheet = DeliverSheet()
                 sheets.add(newSheet)
                 onSheetClick(newSheet, true)
-            }
+            },
+            onStatisticsSaved = onStatisticsSaved
         )
     }
 
@@ -75,7 +78,8 @@ fun SheetPanel(
 fun SheetPanelHeader(
     modifier: Modifier,
     onSettingsResult: (SettingsResult) -> Unit,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    onStatisticsSaved: (SheetViewModel.SaveResult) -> Unit
 ) {
 
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -113,9 +117,15 @@ fun SheetPanelHeader(
     }
 
     if (showStatisticsDialog) {
-        StatisticsDialog {
-            showStatisticsDialog = false
-        }
+        StatisticsDialog(
+            onStatisticsSaved = {
+                showStatisticsDialog = false
+                onStatisticsSaved(it)
+            },
+            onDismissRequest = {
+                showStatisticsDialog = false
+            }
+        )
     }
 
     if (showSettingsDialog) {

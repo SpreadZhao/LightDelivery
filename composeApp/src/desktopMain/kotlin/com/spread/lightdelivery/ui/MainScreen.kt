@@ -60,6 +60,17 @@ fun MainScreen(modifier: Modifier) {
                     }
                     SheetViewModel.unsaved.value = !sheet.valid
                     SheetViewModel.currDeliverSheet.value = sheet
+                },
+                onStatisticsSaved = {
+                    scope.launch {
+                        if (it.success) {
+                            SheetViewModel.refreshSheets()
+                            snackbarHostState.showSnackbar("保存成功")
+                        } else {
+                            // 保存失败不刷新，让内存里的sheet还留着
+                            snackbarHostState.showSnackbar("保存失败：${it.errMsg}")
+                        }
+                    }
                 }
             )
             VerticalDivider(modifier = Modifier.fillMaxHeight())

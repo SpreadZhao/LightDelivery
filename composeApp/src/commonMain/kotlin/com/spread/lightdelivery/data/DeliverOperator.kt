@@ -2,6 +2,7 @@ package com.spread.lightdelivery.data
 
 import com.spread.lightdelivery.INVALID_DATE
 import com.spread.lightdelivery.YMDStr
+import com.spread.lightdelivery.data.SheetViewModel.SaveResult
 import com.spread.lightdelivery.sumTotalPrice
 import com.spread.lightdelivery.toDate
 import org.apache.poi.ss.usermodel.BorderStyle
@@ -139,8 +140,9 @@ object DeliverOperator {
         return sheetList
     }
 
+
     fun writeToFile(
-        result: SheetViewModel.SaveResult,
+        result: SaveResult,
         fileName: String,
         sheet: DeliverSheet,
         isNew: Boolean
@@ -294,11 +296,13 @@ object DeliverOperator {
         year: Int,
         month: Int,
         priceMap: Map<Int, Double>
-    ): Boolean {
+    ): SaveResult {
+        val result = SaveResult()
         try {
             val dir = ensureDir(DIR_STATISTICS)
             if (!dir.exists()) {
-                return false
+                result.errMsg = "创建文件夹失败"
+                return result
             }
             val filename = "${customerName}.xlsx"
             val xlsxFile = File(dir, filename)
@@ -312,7 +316,8 @@ object DeliverOperator {
             for (i in 0 until workbook.numberOfSheets) {
                 val sheet = workbook.getSheetAt(i)
                 if (sheet.sheetName == "${month}月") {
-                    return false
+                    result.errMsg = "${customerName}的${month}月数据已存在"
+                    return result
                 }
             }
             val sheet = workbook.createSheet("${month}月")
@@ -339,9 +344,13 @@ object DeliverOperator {
             dailyTotalPriceCell.cellStyle = style
             dailyTotalPriceCell.setCellValue("单日总价")
 
+            sheet.setColumnWidth(0, 30 * 256)
+            sheet.setColumnWidth(1, 17 * 256)
+
+            var rowIndex = 1
             // daily price
             for ((day, price) in priceMap) {
-                val row = sheet.createRow(day)
+                val row = sheet.createRow(rowIndex)
                 row.createCell(0).apply {
                     setCellValue("${year}年${month}月${day}日")
                     cellStyle = style
@@ -350,10 +359,11 @@ object DeliverOperator {
                     setCellValue(price)
                     cellStyle = style
                 }
+                rowIndex++
             }
 
             // total price
-            val rowTotal = sheet.createRow(priceMap.size + 1)
+            val rowTotal = sheet.createRow(rowIndex)
             rowTotal.createCell(0).apply {
                 setCellValue("产品总价")
                 cellStyle = style
@@ -366,10 +376,12 @@ object DeliverOperator {
             FileOutputStream(xlsxFile).use {
                 workbook.write(it)
                 workbook.close()
-                return true
+                result.success = true
+                return result
             }
         } catch (e: Exception) {
-            return false
+            result.errMsg = e.localizedMessage
+            return result
         }
     }
 
