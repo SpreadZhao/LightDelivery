@@ -5,6 +5,7 @@ import com.spread.lightdelivery.YMDStr
 import com.spread.lightdelivery.data.SheetViewModel.SaveResult
 import com.spread.lightdelivery.sumTotalPrice
 import com.spread.lightdelivery.toDate
+import org.apache.poi.EmptyFileException
 import org.apache.poi.ss.usermodel.BorderStyle
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.HorizontalAlignment
@@ -298,6 +299,7 @@ object DeliverOperator {
         priceMap: Map<Int, Double>
     ): SaveResult {
         val result = SaveResult()
+        var xlsxFile: File? = null
         try {
             val dir = ensureDir(DIR_STATISTICS)
             if (!dir.exists()) {
@@ -305,22 +307,29 @@ object DeliverOperator {
                 return result
             }
             val filename = "${customerName}.xlsx"
-            val xlsxFile = File(dir, filename)
-            val workbook = if (xlsxFile.exists()) {
-                XSSFWorkbook(xlsxFile)
-            } else {
-                xlsxFile.createNewFile()
+            xlsxFile = File(dir, filename)
+            val workbook = try {
+                if (xlsxFile.exists()) {
+                    FileInputStream(xlsxFile).use {
+                        XSSFWorkbook(it)
+                    }
+                } else {
+                    XSSFWorkbook()
+                }
+            } catch (e: EmptyFileException) {
+                xlsxFile.delete()
                 XSSFWorkbook()
             }
+            val sheetName = sheetName(year, month)
             // ensure sheet not exist
             for (i in 0 until workbook.numberOfSheets) {
                 val sheet = workbook.getSheetAt(i)
-                if (sheet.sheetName == "${month}月") {
-                    result.errMsg = "${customerName}的${month}月数据已存在"
+                if (sheet.sheetName == sheetName) {
+                    result.errMsg = "${customerName}的${year}年${month}月数据已存在"
                     return result
                 }
             }
-            val sheet = workbook.createSheet("${month}月")
+            val sheet = workbook.createSheet(sheetName)
             val style = workbook.createCellStyle().apply {
                 setFont(workbook.createFont().apply {
                     fontName = "宋体"
@@ -343,6 +352,7 @@ object DeliverOperator {
             val dailyTotalPriceCell = rowTitle.createCell(1)
             dailyTotalPriceCell.cellStyle = style
             dailyTotalPriceCell.setCellValue("单日总价")
+            rowTitle.heightInPoints = 36f
 
             sheet.setColumnWidth(0, 30 * 256)
             sheet.setColumnWidth(1, 17 * 256)
@@ -359,6 +369,7 @@ object DeliverOperator {
                     setCellValue(price)
                     cellStyle = style
                 }
+                row.heightInPoints = 36f
                 rowIndex++
             }
 
@@ -372,6 +383,7 @@ object DeliverOperator {
                 setCellValue(priceMap.values.sumTotalPrice())
                 cellStyle = style
             }
+            rowTotal.heightInPoints = 36f
 
             FileOutputStream(xlsxFile).use {
                 workbook.write(it)
@@ -380,11 +392,15 @@ object DeliverOperator {
                 return result
             }
         } catch (e: Exception) {
-            result.errMsg = e.localizedMessage
+            e.printStackTrace()
+            result.errMsg = "${xlsxFile?.name}写入失败：${e.localizedMessage}"
             return result
         }
     }
 
+    private fun sheetName(year: Int, month: Int): String {
+        return "${year}年${month}月"
+    }
 
     private fun checkSheetEnd(row: Row): Boolean {
         if (row.getCell(0)?.stringCellValue == "总计金额") {

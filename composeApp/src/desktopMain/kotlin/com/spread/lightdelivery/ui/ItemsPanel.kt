@@ -71,7 +71,6 @@ fun ItemsPanel(
     isNew: Boolean,
     onSaveSheet: (SheetViewModel.SaveResult) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
     // 使用 remember 保存一个可变的 StateList
     val items = remember { mutableStateListOf<DeliverItem>().apply { addAll(sheet.deliverItems) } }
     var showModifyDialog by remember { mutableStateOf(false) }
