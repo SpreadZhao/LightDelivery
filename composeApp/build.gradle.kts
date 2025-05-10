@@ -87,6 +87,10 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.spread.lightdelivery"
             packageVersion = "1.0.0"
+
+            buildTypes.release.proguard {
+                isEnabled = false
+            }
         }
     }
 }
